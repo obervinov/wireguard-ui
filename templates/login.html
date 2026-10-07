@@ -1,8 +1,17 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
     <meta charset="utf-8">
+    <script>
+        // apply stored theme before first paint to avoid a flash
+        (function () {
+            try {
+                var t = localStorage.getItem('wgui-theme');
+                if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t);
+            } catch (e) {}
+        })();
+    </script>
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>WireGuard UI</title>
     <!-- Tell the browser to be responsive to screen width -->
@@ -12,20 +21,21 @@
 
     <!-- Font Awesome -->
     <link rel="stylesheet" href="{{.basePath}}/static/plugins/fontawesome-free/css/all.min.css">
-    <!-- Ionicons -->
-    <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
     <!-- icheck bootstrap -->
     <link rel="stylesheet" href="{{.basePath}}/static/plugins/icheck-bootstrap/icheck-bootstrap.min.css">
     <!-- Theme style -->
     <link rel="stylesheet" href="{{.basePath}}/static/dist/css/adminlte.min.css">
-    <!-- Google Font: Source Sans Pro -->
-    <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
+    <!-- Theme (must load after adminlte) -->
+    <link rel="stylesheet" href="{{.basePath}}/static/custom/css/theme.css">
 </head>
 
 <body class="hold-transition login-page">
+    <button type="button" class="wg-theme-toggle" id="theme-toggle" title="Toggle dark mode" aria-label="Toggle dark mode">
+        <i class="fas fa-moon wg-icon-moon"></i><i class="fas fa-sun wg-icon-sun"></i>
+    </button>
     <div class="login-box">
         <div class="login-logo">
-            <a href="https://github.com/ngoduykhanh/wireguard-ui">WireGuard UI</a>
+            <a href="https://github.com/ngoduykhanh/wireguard-ui"><span class="wg-brand-mark"><i class="fas fa-shield-alt"></i></span>WireGuard UI</a>
         </div>
         <!-- /.login-logo -->
         <div class="card">
@@ -36,7 +46,7 @@
                         <input id="username" type="text" class="form-control" placeholder="Username">
                         <div class="input-group-append">
                             <div class="input-group-text">
-                                <span class="fas fa-envelope"></span>
+                                <span class="fas fa-user"></span>
                             </div>
                         </div>
                     </div>
@@ -48,8 +58,8 @@
                             </div>
                         </div>
                     </div>
-                    <div class="row">
-                        <div class="col-8">
+                    <div class="row align-items-center">
+                        <div class="col-7">
                             <div class="icheck-primary">
                                 <input type="checkbox" id="remember">
                                 <label for="remember">
@@ -58,7 +68,7 @@
                             </div>
                         </div>
                         <!-- /.col -->
-                        <div class="col-4">
+                        <div class="col-5">
                             <button id="btn_login" type="submit" class="btn btn-primary btn-block">Sign In</button>
                         </div>
                         <!-- /.col -->
@@ -78,6 +88,22 @@
     <script src="{{.basePath}}/static/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
     <!-- AdminLTE App -->
     <script src="{{.basePath}}/static/dist/js/adminlte.min.js"></script>
+    <script>
+        (function () {
+            var btn = document.getElementById('theme-toggle');
+            if (!btn) return;
+            btn.addEventListener('click', function () {
+                var root = document.documentElement;
+                var current = root.getAttribute('data-theme');
+                if (current !== 'dark' && current !== 'light') {
+                    current = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+                }
+                var next = current === 'dark' ? 'light' : 'dark';
+                root.setAttribute('data-theme', next);
+                try { localStorage.setItem('wgui-theme', next); } catch (e) {}
+            });
+        })();
+    </script>
 
 </body>
 <script>
