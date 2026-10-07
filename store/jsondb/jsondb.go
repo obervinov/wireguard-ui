@@ -236,7 +236,33 @@ func (o *JsonDB) DeleteUser(username string) error {
 // GetGlobalSettings func to query global settings from the database
 func (o *JsonDB) GetGlobalSettings() (model.GlobalSetting, error) {
 	settings := model.GlobalSetting{}
-	return settings, o.conn.Read("server", "global_settings", &settings)
+	if err := o.conn.Read("server", "global_settings", &settings); err != nil {
+		return settings, err
+	}
+	if shared, err := o.GetSharedAllowedIPs(); err == nil {
+		settings.SharedAllowedIPs = shared.All()
+	}
+	return settings, nil
+}
+
+// GetSharedAllowedIPs returns the shared AllowedIPs list, empty if it was never saved
+func (o *JsonDB) GetSharedAllowedIPs() (model.SharedAllowedIPs, error) {
+	shared := model.SharedAllowedIPs{}
+	sharedPath := path.Join(o.dbPath, "server", "shared_allowed_ips.json")
+	if _, err := os.Stat(sharedPath); os.IsNotExist(err) {
+		return shared, nil
+	}
+	return shared, o.conn.Read("server", "shared_allowed_ips", &shared)
+}
+
+// SaveSharedAllowedIPs persists the shared AllowedIPs list
+func (o *JsonDB) SaveSharedAllowedIPs(shared model.SharedAllowedIPs) error {
+	sharedPath := path.Join(o.dbPath, "server", "shared_allowed_ips.json")
+	output := o.conn.Write("server", "shared_allowed_ips", shared)
+	if err := util.ManagePerms(sharedPath); err != nil {
+		return err
+	}
+	return output
 }
 
 // GetServer func to query Server settings from the database

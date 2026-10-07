@@ -154,6 +154,14 @@ Wireguard Clients
                     </div>
                     <div class="form-group">
                         <div class="icheck-primary d-inline">
+                            <input type="checkbox" id="_exclude_shared_allowed_ips">
+                            <label for="_exclude_shared_allowed_ips">
+                                Exclude shared Allowed IPs
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="icheck-primary d-inline">
                             <input type="checkbox" id="_use_server_dns">
                             <label for="_use_server_dns">
                                 Use server DNS
@@ -655,6 +663,7 @@ Wireguard Clients
                         modal.find("#_client_endpoint").val(client.endpoint);
 
                         modal.find("#_use_server_dns").prop("checked", client.use_server_dns);
+                        modal.find("#_exclude_shared_allowed_ips").prop("checked", client.exclude_shared_allowed_ips);
                         modal.find("#_enabled").prop("checked", client.enabled);
 
                         modal.find("#_client_public_key").val(client.public_key);
@@ -760,7 +769,8 @@ Wireguard Clients
             const email = $("#_client_email").val();
             const telegram_userid = $("#_client_telegram_userid").val();
             const allocated_ips = $("#_client_allocated_ips").val().split(",");
-            const allowed_ips = $("#_client_allowed_ips").val().split(",");
+            const allowed_ips = $("#_client_allowed_ips").val().split(",").filter(Boolean);
+            const exclude_shared_allowed_ips = $("#_exclude_shared_allowed_ips").is(':checked');
             let use_server_dns = false;
             let extra_allowed_ips = [];
             const public_key = $("#_client_public_key").val();
@@ -786,7 +796,7 @@ Wireguard Clients
 
             const data = {"id": client_id, "name": name, "email": email, "telegram_userid": telegram_userid, "allocated_ips": allocated_ips,
                 "allowed_ips": allowed_ips, "extra_allowed_ips": extra_allowed_ips, "endpoint": endpoint,
-                "use_server_dns": use_server_dns, "enabled": enabled, "public_key": public_key, "preshared_key": preshared_key, "additional_notes": additional_notes};
+                "use_server_dns": use_server_dns, "exclude_shared_allowed_ips": exclude_shared_allowed_ips, "enabled": enabled, "public_key": public_key, "preshared_key": preshared_key, "additional_notes": additional_notes};
 
             $.ajax({
                 cache: false,
