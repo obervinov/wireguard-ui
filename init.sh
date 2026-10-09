@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# run the given command instead of the app, e.g. `docker run <image> uname -m`
+if [ "$#" -gt 0 ]; then
+    exec "$@"
+fi
+
 # extract wg config file path, or use default
 conf="$(jq -r .config_file_path db/server/global_settings.json || echo /etc/wireguard/wg0.conf)"
 

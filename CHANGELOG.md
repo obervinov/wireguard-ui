@@ -8,4 +8,5 @@ Fork of [ngoduykhanh/wireguard-ui](https://github.com/ngoduykhanh/wireguard-ui) 
 * Shared client AllowedIPs: one list appended to every client config, with a per-client opt-out. Static entries are edited in Global Settings; with `WGUI_DO_TOKEN` set, the list is refreshed from the public IPv4 of all droplets and all reserved IPs. The endpoint address is never synced into the list.
 * New UI theme with light and dark mode; no external font or icon CDN requests.
 #### 🔧 CI
+* `init.sh`: run the given command instead of the app when arguments are passed, so `docker run <image> uname -m` in the template validation exits instead of starting the server.
 * Build and publish `ghcr.io/obervinov/wireguard-ui` through the `obervinov/_templates@v4.0.0` reusable workflows, replacing the upstream Docker Hub, lint and binary release workflows.
