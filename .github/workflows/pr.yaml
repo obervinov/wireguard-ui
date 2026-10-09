@@ -1,0 +1,23 @@
+---
+name: PR
+
+on:
+  push:
+    branches: ['*', '*/*', '**', '!main']
+
+# Scoped for the reusable workflows: PR body updates and GHCR push.
+permissions:
+  contents: write
+  packages: write
+  pull-requests: write
+  security-events: write
+  actions: write
+  checks: read
+
+jobs:
+  pr:
+    uses: obervinov/_templates/.github/workflows/pr.yaml@v4.0.0
+
+  build-pr-image:
+    uses: obervinov/_templates/.github/workflows/docker.yaml@v4.0.0
+    needs: [pr]
