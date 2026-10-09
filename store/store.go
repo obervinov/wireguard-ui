@@ -19,6 +19,8 @@ type IStore interface {
 	SaveServerInterface(serverInterface model.ServerInterface) error
 	SaveServerKeyPair(serverKeyPair model.ServerKeypair) error
 	SaveGlobalSettings(globalSettings model.GlobalSetting) error
+	GetSharedAllowedIPs() (model.SharedAllowedIPs, error)
+	SaveSharedAllowedIPs(shared model.SharedAllowedIPs) error
 	GetWakeOnLanHosts() ([]model.WakeOnLanHost, error)
 	GetWakeOnLanHost(macAddress string) (*model.WakeOnLanHost, error)
 	DeleteWakeOnHostLanHost(macAddress string) error

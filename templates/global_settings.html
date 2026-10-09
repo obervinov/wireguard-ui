@@ -82,6 +82,44 @@ Global Settings
                     </form>
                 </div>
                 <!-- /.card -->
+                <div class="card card-success" id="card_shared_allowed_ips">
+                    <div class="card-header">
+                        <h3 class="card-title">Shared Allowed IPs</h3>
+                    </div>
+                    <form role="form" id="frm_shared_allowed_ips" name="frm_shared_allowed_ips">
+                        <div class="card-body">
+                            <p class="text-muted">Added to the <code>AllowedIPs</code> of every client config,
+                                except clients with <strong>Exclude shared Allowed IPs</strong> set.
+                                Client-side only: changing it needs no <strong>Apply Config</strong>,
+                                clients pick it up when they re-download their config.</p>
+                            <div class="form-group">
+                                <label for="shared_static_ips" class="control-label">Static entries</label>
+                                <input type="text" data-role="tagsinput" class="form-control" id="shared_static_ips" value="">
+                            </div>
+                            <div class="form-group mb-0">
+                                <label class="control-label">Synced from DigitalOcean</label>
+                                {{if .sharedSyncEnabled}}
+                                <div id="shared_synced_ips" class="mb-2">
+                                    {{range .sharedAllowedIPs.SyncedIPs}}<span class="badge badge-secondary mr-1">{{.}}</span>{{else}}<span class="text-muted">empty</span>{{end}}
+                                </div>
+                                <small class="text-muted d-block" id="shared_synced_at">
+                                    {{if .sharedAllowedIPs.SyncedAt.IsZero}}Not synced yet{{else}}Last sync: {{.sharedAllowedIPs.SyncedAt.Format "2006-01-02 15:04:05 UTC"}}{{end}}
+                                </small>
+                                <small class="text-danger d-block" id="shared_sync_error">{{.sharedAllowedIPs.SyncError}}</small>
+                                {{else}}
+                                <small class="text-muted d-block">Disabled. Set <code>WGUI_DO_TOKEN</code> (read-only token) to sync
+                                    droplet public IPs and reserved IPs automatically.</small>
+                                {{end}}
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button type="submit" class="btn btn-success">Save</button>
+                            {{if .sharedSyncEnabled}}
+                            <button type="button" class="btn btn-outline-secondary" id="btn_shared_sync"><i class="fas fa-sync-alt"></i> Sync now</button>
+                            {{end}}
+                        </div>
+                    </form>
+                </div>
             </div>
             <div class="col-md-6">
                 <div class="card card-success">
@@ -113,6 +151,12 @@ Global Settings
                             <dt>7. Wireguard Config File Path</dt>
                             <dd>The path of your Wireguard server config file. Please make sure the parent directory
                                 exists and is writable.</dd>
+                            <dt>8. Shared Allowed IPs</dt>
+                            <dd>One list appended to every client's own <code>AllowedIPs</code>. Static entries are
+                                kept by hand; the DigitalOcean part is refreshed every <code>WGUI_DO_SYNC_INTERVAL</code>
+                                (default <code>15m</code>) with the public IPv4 of all droplets and all reserved IPs as
+                                <code>/32</code>. The endpoint address is always left out so the tunnel never routes
+                                its own endpoint; add more exclusions with <code>WGUI_DO_SYNC_EXCLUDE</code>.</dd>
                         </dl>
                     </div>
                 </div>
@@ -180,6 +224,62 @@ Global Settings
             });
         }
 
+        function submitSharedAllowedIPs() {
+            const raw = $("#shared_static_ips").val();
+            const data = {"static_ips": raw ? raw.split(",") : []};
+            $.ajax({
+                cache: false,
+                method: 'POST',
+                url: '{{.basePath}}/global-settings/shared-allowed-ips',
+                dataType: 'json',
+                contentType: "application/json",
+                data: JSON.stringify(data),
+                success: function() {
+                    toastr.success('Updated shared Allowed IPs successfully');
+                },
+                error: function(jqXHR) {
+                    const responseJson = jQuery.parseJSON(jqXHR.responseText);
+                    toastr.error(responseJson['message']);
+                }
+            });
+        }
+
+        function renderSharedSync(data) {
+            const list = $("#shared_synced_ips").empty();
+            if (!data.synced_ips || data.synced_ips.length === 0) {
+                list.append($('<span class="text-muted"></span>').text('empty'));
+            }
+            $.each(data.synced_ips || [], function(_, ip) {
+                list.append($('<span class="badge badge-secondary mr-1"></span>').text(ip));
+            });
+            $("#shared_synced_at").text('Last sync: ' + new Date(data.synced_at).toISOString().replace('T', ' ').substring(0, 19) + ' UTC');
+            $("#shared_sync_error").text(data.sync_error || '');
+        }
+
+        function syncSharedAllowedIPs() {
+            const btn = $("#btn_shared_sync").prop('disabled', true);
+            $.ajax({
+                cache: false,
+                method: 'POST',
+                url: '{{.basePath}}/api/shared-allowed-ips/sync',
+                dataType: 'json',
+                contentType: "application/json",
+                data: '{}',
+                success: function(data) {
+                    renderSharedSync(data);
+                    toastr.success('Synced ' + (data.synced_ips || []).length + ' addresses from DigitalOcean');
+                },
+                error: function(jqXHR) {
+                    const responseJson = jQuery.parseJSON(jqXHR.responseText);
+                    $("#shared_sync_error").text(responseJson['message']);
+                    toastr.error(responseJson['message']);
+                },
+                complete: function() {
+                    btn.prop('disabled', false);
+                }
+            });
+        }
+
         function updateEndpointSuggestionIP() {
             $.getJSON("{{.basePath}}/api/machine-ips", null, function(data) {
                 $("#ip_suggestion option").remove();
@@ -212,6 +312,29 @@ Global Settings
         $("#dns_servers").removeTag('{{.}}');
         $("#dns_servers").addTag('{{.}}');
         {{end}}
+
+        // Shared Allowed IPs tag input
+        $("#shared_static_ips").tagsInput({
+            'width': '100%',
+            'height': '75%',
+            'interactive': true,
+            'defaultText': 'Add CIDR',
+            'removeWithBackspace': true,
+            'minChars': 0,
+            'minInputWidth': '100%',
+            'placeholderColor': '#666666'
+        });
+        {{range .sharedAllowedIPs.StaticIPs}}
+        $("#shared_static_ips").addTag('{{.}}');
+        {{end}}
+
+        $(document).ready(function () {
+            $("#frm_shared_allowed_ips").on('submit', function (e) {
+                e.preventDefault();
+                submitSharedAllowedIPs();
+            });
+            $("#btn_shared_sync").click(syncSharedAllowedIPs);
+        });
 
         // Global setting form validation
         $(document).ready(function () {

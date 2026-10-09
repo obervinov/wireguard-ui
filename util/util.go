@@ -58,7 +58,7 @@ func BuildClientConfig(client model.Client, server model.Server, setting model.G
 		peerPresharedKey = fmt.Sprintf("PresharedKey = %s\n", client.PresharedKey)
 	}
 
-	peerAllowedIPs := fmt.Sprintf("AllowedIPs = %s\n", strings.Join(client.AllowedIPs, ","))
+	peerAllowedIPs := fmt.Sprintf("AllowedIPs = %s\n", strings.Join(EffectiveAllowedIPs(client, setting), ","))
 
 	desiredHost := setting.EndpointAddress
 	desiredPort := server.Interface.ListenPort
@@ -92,6 +92,14 @@ func BuildClientConfig(client model.Client, server model.Server, setting model.G
 		peerPersistentKeepalive
 
 	return strConfig
+}
+
+// EffectiveAllowedIPs returns the client's own AllowedIPs plus the shared list, unless the client opted out
+func EffectiveAllowedIPs(client model.Client, setting model.GlobalSetting) []string {
+	if client.ExcludeSharedAllowedIPs {
+		return model.MergeIPLists(client.AllowedIPs)
+	}
+	return model.MergeIPLists(client.AllowedIPs, setting.SharedAllowedIPs)
 }
 
 // ClientDefaultsFromEnv to read the default values for creating a new client from the environment or use sane defaults
@@ -673,6 +681,18 @@ func LookupEnvOrInt(key string, defaultVal int) int {
 			fmt.Fprintf(os.Stderr, "LookupEnvOrInt[%s]: %v\n", key, err)
 		}
 		return v
+	}
+	return defaultVal
+}
+
+func LookupEnvOrDuration(key string, defaultVal time.Duration) time.Duration {
+	if val, ok := os.LookupEnv(key); ok {
+		d, err := time.ParseDuration(val)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "LookupEnvOrDuration[%s]: %v\n", key, err)
+			return defaultVal
+		}
+		return d
 	}
 	return defaultVal
 }

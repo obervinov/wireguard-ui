@@ -25,6 +25,7 @@ import (
 
 	"github.com/ngoduykhanh/wireguard-ui/emailer"
 	"github.com/ngoduykhanh/wireguard-ui/model"
+	"github.com/ngoduykhanh/wireguard-ui/sharedips"
 	"github.com/ngoduykhanh/wireguard-ui/store"
 	"github.com/ngoduykhanh/wireguard-ui/telegram"
 	"github.com/ngoduykhanh/wireguard-ui/util"
@@ -448,6 +449,10 @@ func NewClient(db store.IStore) echo.HandlerFunc {
 			return c.JSON(http.StatusBadRequest, jsonHTTPResponse{false, "Extra AllowedIPs must be in CIDR format"})
 		}
 
+		if !validateEffectiveAllowedIPs(db, client) {
+			return c.JSON(http.StatusBadRequest, jsonHTTPResponse{false, "Allowed IPs cannot be empty when the client does not use the shared list"})
+		}
+
 		// gen ID
 		guid := xid.New()
 		client.ID = guid.String()
@@ -669,6 +674,10 @@ func UpdateClient(db store.IStore) echo.HandlerFunc {
 			return c.JSON(http.StatusBadRequest, jsonHTTPResponse{false, "Extra Allowed IPs must be in CIDR format"})
 		}
 
+		if !validateEffectiveAllowedIPs(db, _client) {
+			return c.JSON(http.StatusBadRequest, jsonHTTPResponse{false, "Allowed IPs cannot be empty when the client does not use the shared list"})
+		}
+
 		// update Wireguard Client PublicKey
 		if client.PublicKey != _client.PublicKey && _client.PublicKey != "" {
 			_, err := wgtypes.ParseKey(_client.PublicKey)
@@ -713,6 +722,7 @@ func UpdateClient(db store.IStore) echo.HandlerFunc {
 		client.TgUserid = _client.TgUserid
 		client.Enabled = _client.Enabled
 		client.UseServerDNS = _client.UseServerDNS
+		client.ExcludeSharedAllowedIPs = _client.ExcludeSharedAllowedIPs
 		client.AllocatedIPs = _client.AllocatedIPs
 		client.AllowedIPs = _client.AllowedIPs
 		client.ExtraAllowedIPs = _client.ExtraAllowedIPs
@@ -892,16 +902,22 @@ func WireGuardServerKeyPair(db store.IStore) echo.HandlerFunc {
 }
 
 // GlobalSettings handler
-func GlobalSettings(db store.IStore) echo.HandlerFunc {
+func GlobalSettings(db store.IStore, syncer *sharedips.Syncer) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		globalSettings, err := db.GetGlobalSettings()
 		if err != nil {
 			log.Error("Cannot get global settings: ", err)
 		}
+		sharedAllowedIPs, err := db.GetSharedAllowedIPs()
+		if err != nil {
+			log.Error("Cannot get shared AllowedIPs: ", err)
+		}
 
 		return c.Render(http.StatusOK, "global_settings.html", map[string]interface{}{
-			"baseData":       model.BaseData{Active: "global-settings", CurrentUser: currentUser(c), Admin: isAdmin(c)},
-			"globalSettings": globalSettings,
+			"baseData":          model.BaseData{Active: "global-settings", CurrentUser: currentUser(c), Admin: isAdmin(c)},
+			"globalSettings":    globalSettings,
+			"sharedAllowedIPs":  sharedAllowedIPs,
+			"sharedSyncEnabled": syncer.Enabled(),
 		})
 	}
 }

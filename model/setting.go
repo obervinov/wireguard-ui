@@ -14,4 +14,6 @@ type GlobalSetting struct {
 	Table               string    `json:"table"`
 	ConfigFilePath      string    `json:"config_file_path"`
 	UpdatedAt           time.Time `json:"updated_at"`
+	// SharedAllowedIPs is loaded from server/shared_allowed_ips.json, never persisted here
+	SharedAllowedIPs []string `json:"-"`
 }

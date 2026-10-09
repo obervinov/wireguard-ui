@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/sha512"
 	"embed"
 	"flag"
@@ -21,6 +22,7 @@ import (
 	"github.com/ngoduykhanh/wireguard-ui/emailer"
 	"github.com/ngoduykhanh/wireguard-ui/handler"
 	"github.com/ngoduykhanh/wireguard-ui/router"
+	"github.com/ngoduykhanh/wireguard-ui/sharedips"
 	"github.com/ngoduykhanh/wireguard-ui/store/jsondb"
 	"github.com/ngoduykhanh/wireguard-ui/util"
 )
@@ -53,6 +55,8 @@ var (
 	flagWgConfTemplate           string
 	flagBasePath                 string
 	flagSubnetRanges             string
+	flagDOToken                  string
+	flagDOSyncInterval           = 15 * time.Minute
 )
 
 const (
@@ -120,6 +124,13 @@ func init() {
 		flag.StringVar(&flagSessionSecret, "session-secret", sessionSecretLookup, "The key used to encrypt session cookies.")
 	} else {
 		flag.StringVar(&flagSessionSecret, "session-secret", util.LookupEnvOrFile("SESSION_SECRET_FILE", flagSessionSecret), "File containing the key used to encrypt session cookies.")
+	}
+
+	flag.DurationVar(&flagDOSyncInterval, "do-sync-interval", util.LookupEnvOrDuration("WGUI_DO_SYNC_INTERVAL", flagDOSyncInterval), "How often to sync the shared AllowedIPs list from DigitalOcean.")
+	if doTokenLookup := util.LookupEnvOrString("WGUI_DO_TOKEN", ""); doTokenLookup != "" {
+		flag.StringVar(&flagDOToken, "do-token", doTokenLookup, "DigitalOcean read-only API token for the shared AllowedIPs sync.")
+	} else {
+		flag.StringVar(&flagDOToken, "do-token", util.LookupEnvOrFile("WGUI_DO_TOKEN_FILE", ""), "File containing the DigitalOcean API token.")
 	}
 
 	flag.Parse()
@@ -194,6 +205,12 @@ func main() {
 	// create the wireguard config on start, if it doesn't exist
 	initServerConfig(db, tmplDir)
 
+	// shared AllowedIPs sync from DigitalOcean, disabled without a token
+	sharedSyncer := sharedips.NewSyncer(db, flagDOToken, flagDOSyncInterval, util.LookupEnvOrStrings("WGUI_DO_SYNC_EXCLUDE", []string{}))
+	if sharedSyncer.Enabled() {
+		go sharedSyncer.Run(context.Background())
+	}
+
 	// Check if subnet ranges are valid for the server configuration
 	// Remove any non-valid CIDRs
 	if err := util.ValidateAndFixSubnetRanges(db); err != nil {
@@ -248,7 +265,10 @@ func main() {
 	app.GET(util.BasePath+"/wg-server", handler.WireGuardServer(db), handler.ValidSession, handler.RefreshSession, handler.NeedsAdmin)
 	app.POST(util.BasePath+"/wg-server/interfaces", handler.WireGuardServerInterfaces(db), handler.ValidSession, handler.ContentTypeJson, handler.NeedsAdmin)
 	app.POST(util.BasePath+"/wg-server/keypair", handler.WireGuardServerKeyPair(db), handler.ValidSession, handler.ContentTypeJson, handler.NeedsAdmin)
-	app.GET(util.BasePath+"/global-settings", handler.GlobalSettings(db), handler.ValidSession, handler.RefreshSession, handler.NeedsAdmin)
+	app.GET(util.BasePath+"/global-settings", handler.GlobalSettings(db, sharedSyncer), handler.ValidSession, handler.RefreshSession, handler.NeedsAdmin)
+	app.POST(util.BasePath+"/global-settings/shared-allowed-ips", handler.SharedAllowedIPsSubmit(db), handler.ValidSession, handler.ContentTypeJson, handler.NeedsAdmin)
+	app.GET(util.BasePath+"/api/shared-allowed-ips", handler.GetSharedAllowedIPs(db, sharedSyncer), handler.ValidSession)
+	app.POST(util.BasePath+"/api/shared-allowed-ips/sync", handler.SyncSharedAllowedIPs(db, sharedSyncer), handler.ValidSession, handler.ContentTypeJson, handler.NeedsAdmin)
 	app.POST(util.BasePath+"/global-settings", handler.GlobalSettingSubmit(db), handler.ValidSession, handler.ContentTypeJson, handler.NeedsAdmin)
 	app.GET(util.BasePath+"/status", handler.Status(db), handler.ValidSession, handler.RefreshSession)
 	app.GET(util.BasePath+"/api/clients", handler.GetClients(db), handler.ValidSession)
