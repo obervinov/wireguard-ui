@@ -14,7 +14,7 @@ in each release is in [CHANGELOG.md](CHANGELOG.md).
 
 ## Features
 
-- Friendly UI with light and dark themes, no external font or icon CDNs
+- Friendly UI with light and dark themes; works offline, all assets are served by wgui itself
 - Authentication, with optional TOTP two-factor and recovery codes (Profile page)
 - Manage extra client information (name, email, etc.)
 - Retrieve client config using QR code / file / email / Telegram, or a one-time Enclosed link
