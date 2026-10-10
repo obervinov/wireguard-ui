@@ -47,6 +47,57 @@ Profile
                 </div>
                 <!-- /.card -->
             </div>
+            <div class="col-md-6">
+                <div class="card" id="card_2fa">
+                    <div class="card-header">
+                        <h3 class="card-title">Two-factor authentication</h3>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted" id="totp_status">Loading...</p>
+
+                        <!-- off: start enrollment -->
+                        <div id="totp_off" style="display: none">
+                            <p>After the password, sign-in will also ask for a 6-digit code from an
+                                authenticator app (1Password, Google Authenticator, Aegis, ...).</p>
+                            <button type="button" class="btn btn-primary" id="btn_totp_setup">Enable 2FA</button>
+                        </div>
+
+                        <!-- enrollment: scan, then confirm with a code -->
+                        <div id="totp_setup" style="display: none">
+                            <p>Scan the QR code with your authenticator app, or enter the key by hand.</p>
+                            <p class="text-center"><img id="totp_qr" alt="TOTP QR code" width="200" height="200"></p>
+                            <div class="form-group">
+                                <label for="totp_secret" class="control-label">Key</label>
+                                <input type="text" class="form-control" id="totp_secret" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="totp_setup_code" class="control-label">Code from the app</label>
+                                <input type="text" class="form-control" id="totp_setup_code"
+                                       autocomplete="one-time-code" inputmode="numeric" placeholder="123456">
+                            </div>
+                            <button type="button" class="btn btn-primary" id="btn_totp_enable">Confirm</button>
+                        </div>
+
+                        <!-- enrolled: recovery codes, shown once -->
+                        <div id="totp_codes" style="display: none">
+                            <p><strong>Save these recovery codes.</strong> Each one signs you in once if you lose
+                                your phone. They are not shown again.</p>
+                            <pre id="totp_codes_list"></pre>
+                            <button type="button" class="btn btn-primary" onclick="location.reload()">Done</button>
+                        </div>
+
+                        <!-- on: turn off with a code -->
+                        <div id="totp_on" style="display: none">
+                            <div class="form-group">
+                                <label for="totp_disable_code" class="control-label">Code or recovery code</label>
+                                <input type="text" class="form-control" id="totp_disable_code"
+                                       autocomplete="one-time-code" placeholder="123456">
+                            </div>
+                            <button type="button" class="btn btn-outline-danger" id="btn_totp_disable">Disable 2FA</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
         <!-- /.row -->
     </div>
@@ -71,6 +122,7 @@ Profile
                 $("#username").val(user.username);
                 previous_username = user.username;
                 admin = user.admin;
+                renderTOTP(user);
             },
             error: function (jqXHR, exception) {
                 const responseJson = jQuery.parseJSON(jqXHR.responseText);
@@ -79,6 +131,60 @@ Profile
         });
     });
 
+
+    function renderTOTP(user) {
+        $("#totp_off, #totp_setup, #totp_codes, #totp_on").hide();
+        if (user.totp_enabled) {
+            $("#totp_status").text(`Enabled. Recovery codes left: ${user.recovery_codes_left}.`);
+            $("#totp_on").show();
+        } else {
+            $("#totp_status").text("Disabled.");
+            $("#totp_off").show();
+        }
+    }
+
+    function postTOTP(path, data, success) {
+        $.ajax({
+            cache: false,
+            method: 'POST',
+            url: '{{.basePath}}/api/2fa/' + path,
+            dataType: 'json',
+            contentType: "application/json",
+            data: JSON.stringify(data),
+            success: success,
+            error: function (jqXHR, exception) {
+                const responseJson = jQuery.parseJSON(jqXHR.responseText);
+                toastr.error(responseJson['message']);
+            }
+        });
+    }
+
+    $(document).ready(function () {
+        $("#btn_totp_setup").click(function () {
+            postTOTP("setup", {}, function (resp) {
+                $("#totp_qr").attr("src", resp.qr);
+                $("#totp_secret").val(resp.secret);
+                $("#totp_off").hide();
+                $("#totp_setup").show();
+                $("#totp_setup_code").val("").focus();
+            });
+        });
+        $("#btn_totp_enable").click(function () {
+            postTOTP("enable", {"code": $("#totp_setup_code").val()}, function (resp) {
+                toastr.success(resp.message);
+                $("#totp_codes_list").text(resp.recovery_codes.join("\n"));
+                $("#totp_setup").hide();
+                $("#totp_status").text("Enabled.");
+                $("#totp_codes").show();
+            });
+        });
+        $("#btn_totp_disable").click(function () {
+            postTOTP("disable", {"code": $("#totp_disable_code").val()}, function (resp) {
+                toastr.success(resp.message);
+                location.reload();
+            });
+        });
+    });
 
     function updateUserInfo() {
         const username = $("#username").val();

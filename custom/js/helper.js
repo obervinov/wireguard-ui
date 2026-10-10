@@ -156,6 +156,9 @@ function renderUserList(data) {
                                 <hr>
                                 <span class="info-box-text"><i class="fas fa-user"></i> ${obj.username}</span>
                                 <span class="info-box-text"><i class="fas fa-terminal"></i> ${obj.admin? 'Administrator':'Manager'}</span>
+                                <span class="info-box-text"><i class="fas fa-key" style="${obj.totp_enabled ? "opacity: 1.0" : "opacity: 0.5"}"></i>
+                                    ${obj.totp_enabled ? '2FA enabled' : '2FA disabled'}</span>
+                                ${obj.totp_enabled ? `<div><button type="button" class="btn btn-outline-danger btn-sm btn-reset-2fa" data-username="${obj.username}">Reset 2FA</button></div>` : ''}
                                 </div>
                         </div>
                     </div>`

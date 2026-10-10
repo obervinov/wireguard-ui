@@ -54,3 +54,25 @@ func TestClientsPageRenders(t *testing.T) {
 		t.Error("edit modal misses the use-shared checkbox")
 	}
 }
+
+func TestTwoFactorPagesRender(t *testing.T) {
+	app := New(os.DirFS("../templates"), map[string]interface{}{"basePath": ""}, [64]byte{})
+	for page, wants := range map[string][]string{
+		"profile.html":        {`id="card_2fa"`, `id="btn_totp_setup"`, `id="btn_totp_enable"`, `id="btn_totp_disable"`, `/api/2fa/`},
+		"login.html":          {`id="frm_totp"`, `id="totp_code"`, `/login/2fa`, `totp_required`},
+		"users_settings.html": {`.btn-reset-2fa`, `/api/2fa/reset`},
+	} {
+		var buf bytes.Buffer
+		err := app.Renderer.Render(&buf, page, map[string]interface{}{
+			"baseData": model.BaseData{Active: "profile", CurrentUser: "admin", Admin: true},
+		}, nil)
+		if err != nil {
+			t.Fatalf("%s: render failed: %v", page, err)
+		}
+		for _, want := range wants {
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("%s: output misses %s", page, want)
+			}
+		}
+	}
+}

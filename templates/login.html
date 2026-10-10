@@ -41,7 +41,7 @@
         <div class="card">
             <div class="card-body login-card-body">
                 <p class="login-box-msg">Sign in to start your session</p>
-                <form action="" method="post">
+                <form action="" method="post" id="frm_password">
                     <div class="input-group mb-3">
                         <input id="username" type="text" class="form-control" placeholder="Username">
                         <div class="input-group-append">
@@ -72,6 +72,25 @@
                             <button id="btn_login" type="submit" class="btn btn-primary btn-block">Sign In</button>
                         </div>
                         <!-- /.col -->
+                    </div>
+                </form>
+                <form action="" method="post" id="frm_totp" style="display: none">
+                    <div class="input-group mb-3">
+                        <input id="totp_code" type="text" class="form-control" placeholder="123456 or recovery code"
+                               autocomplete="one-time-code" autocapitalize="off" spellcheck="false">
+                        <div class="input-group-append">
+                            <div class="input-group-text">
+                                <span class="fas fa-key"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row align-items-center">
+                        <div class="col-7">
+                            <a href="#" id="btn_totp_back">Back</a>
+                        </div>
+                        <div class="col-5">
+                            <button id="btn_totp" type="submit" class="btn btn-primary btn-block">Verify</button>
+                        </div>
                     </div>
                 </form>
                 <div class="text-center mb-3">
@@ -119,9 +138,17 @@
 </script>
 <script>
     $(document).ready(function () {
-        $('form').on('submit', function(e) {
+        $('#frm_password').on('submit', function(e) {
             e.preventDefault();
             $("#btn_login").trigger('click');
+        });
+        $('#frm_totp').on('submit', function(e) {
+            e.preventDefault();
+            submitCode();
+        });
+        $('#btn_totp_back').on('click', function(e) {
+            e.preventDefault();
+            showPasswordStep("");
         });
 
         $("#btn_login").click(function () {
@@ -141,6 +168,10 @@
                 contentType: "application/json",
                 data: JSON.stringify(data),
                 success: function(data) {
+                    if (data['totp_required']) {
+                        showCodeStep(data['message']);
+                        return;
+                    }
                     document.getElementById("message").innerHTML = `<p style="color:green">${data['message']}</p>`;
                     // redirect after logging in successfully
                     redirectNext();
@@ -152,5 +183,57 @@
             });
         });
     });
+
+    function showMessage(text, ok) {
+        const p = document.createElement("p");
+        p.style.color = ok ? "green" : "#ff0000";
+        p.textContent = text;
+        $("#message").empty().append(p);
+    }
+
+    function showCodeStep(text) {
+        $(".login-box-msg").text("Two-factor authentication");
+        $("#frm_password").hide();
+        $("#frm_totp").show();
+        $("#totp_code").val("").focus();
+        showMessage(text, true);
+    }
+
+    function showPasswordStep(text) {
+        $(".login-box-msg").text("Sign in to start your session");
+        $("#frm_totp").hide();
+        $("#frm_password").show();
+        $("#password").val("").focus();
+        if (text) {
+            showMessage(text, false);
+        } else {
+            $("#message").empty();
+        }
+    }
+
+    function submitCode() {
+        $.ajax({
+            cache: false,
+            method: 'POST',
+            url: '{{.basePath}}/login/2fa',
+            dataType: 'json',
+            contentType: "application/json",
+            data: JSON.stringify({"code": $("#totp_code").val()}),
+            success: function(data) {
+                showMessage(data['message'], true);
+                redirectNext();
+            },
+            error: function(jqXHR, exception) {
+                const responseJson = jQuery.parseJSON(jqXHR.responseText);
+                // an expired or locked code step needs the password again
+                if (jqXHR.status === 429 || (jqXHR.status === 401 && responseJson['message'] !== "Invalid code")) {
+                    showPasswordStep(responseJson['message']);
+                    return;
+                }
+                showMessage(responseJson['message'], false);
+                $("#totp_code").val("").focus();
+            }
+        });
+    }
 </script>
 </html>

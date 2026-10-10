@@ -14,8 +14,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gorilla/sessions"
-	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/gommon/log"
 	"github.com/rs/xid"
@@ -95,43 +93,13 @@ func Login(db store.IStore) echo.HandlerFunc {
 		}
 
 		if userCorrect && passwordCorrect {
-			ageMax := 0
-			if rememberMe {
-				ageMax = 86400 * 7
+			// with a second factor, the password alone only opens the code step
+			if dbuser.TOTPEnabled() {
+				startPendingLogin(c, dbuser.Username, rememberMe)
+				return c.JSON(http.StatusOK, loginResponse{true, "Enter the code from your authenticator app", true})
 			}
 
-			cookiePath := util.GetCookiePath()
-
-			sess, _ := session.Get("session", c)
-			sess.Options = &sessions.Options{
-				Path:     cookiePath,
-				MaxAge:   ageMax,
-				HttpOnly: true,
-				SameSite: http.SameSiteLaxMode,
-			}
-
-			// set session_token
-			tokenUID := xid.New().String()
-			now := time.Now().UTC().Unix()
-			sess.Values["username"] = dbuser.Username
-			sess.Values["user_hash"] = util.GetDBUserCRC32(dbuser)
-			sess.Values["admin"] = dbuser.Admin
-			sess.Values["session_token"] = tokenUID
-			sess.Values["max_age"] = ageMax
-			sess.Values["created_at"] = now
-			sess.Values["updated_at"] = now
-			sess.Save(c.Request(), c.Response())
-
-			// set session_token in cookie
-			cookie := new(http.Cookie)
-			cookie.Name = "session_token"
-			cookie.Path = cookiePath
-			cookie.Value = tokenUID
-			cookie.MaxAge = ageMax
-			cookie.HttpOnly = true
-			cookie.SameSite = http.SameSiteLaxMode
-			c.SetCookie(cookie)
-
+			startSession(c, dbuser, rememberMe)
 			return c.JSON(http.StatusOK, jsonHTTPResponse{true, "Logged in successfully"})
 		}
 
@@ -149,7 +117,11 @@ func GetUsers(db store.IStore) echo.HandlerFunc {
 			})
 		}
 
-		return c.JSON(http.StatusOK, usersList)
+		views := make([]model.UserView, 0, len(usersList))
+		for _, u := range usersList {
+			views = append(views, u.View())
+		}
+		return c.JSON(http.StatusOK, views)
 	}
 }
 
@@ -171,7 +143,7 @@ func GetUser(db store.IStore) echo.HandlerFunc {
 			return c.JSON(http.StatusNotFound, jsonHTTPResponse{false, "User not found"})
 		}
 
-		return c.JSON(http.StatusOK, userData)
+		return c.JSON(http.StatusOK, userData.View())
 	}
 }
 

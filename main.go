@@ -234,6 +234,7 @@ func main() {
 	if !util.DisableLogin {
 		app.GET(util.BasePath+"/login", handler.LoginPage())
 		app.POST(util.BasePath+"/login", handler.Login(db), handler.ContentTypeJson)
+		app.POST(util.BasePath+"/login/2fa", handler.LoginTOTP(db), handler.ContentTypeJson)
 		app.GET(util.BasePath+"/logout", handler.Logout(), handler.ValidSession)
 		app.GET(util.BasePath+"/profile", handler.LoadProfile(), handler.ValidSession, handler.RefreshSession)
 		app.GET(util.BasePath+"/users-settings", handler.UsersSettings(), handler.ValidSession, handler.RefreshSession, handler.NeedsAdmin)
@@ -242,6 +243,10 @@ func main() {
 		app.POST(util.BasePath+"/remove-user", handler.RemoveUser(db), handler.ValidSession, handler.ContentTypeJson, handler.NeedsAdmin)
 		app.GET(util.BasePath+"/get-users", handler.GetUsers(db), handler.ValidSession, handler.NeedsAdmin)
 		app.GET(util.BasePath+"/api/user/:username", handler.GetUser(db), handler.ValidSession)
+		app.POST(util.BasePath+"/api/2fa/setup", handler.TwoFactorSetup(db), handler.ValidSession, handler.ContentTypeJson)
+		app.POST(util.BasePath+"/api/2fa/enable", handler.TwoFactorEnable(db), handler.ValidSession, handler.ContentTypeJson)
+		app.POST(util.BasePath+"/api/2fa/disable", handler.TwoFactorDisable(db), handler.ValidSession, handler.ContentTypeJson)
+		app.POST(util.BasePath+"/api/2fa/reset", handler.TwoFactorReset(db), handler.ValidSession, handler.ContentTypeJson, handler.NeedsAdmin)
 	}
 
 	var sendmail emailer.Emailer

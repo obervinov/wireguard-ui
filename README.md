@@ -7,7 +7,7 @@ A web user interface to manage your WireGuard setup.
 ## Features
 
 - Friendly UI
-- Authentication
+- Authentication, with optional TOTP two-factor and recovery codes (Profile page)
 - Manage extra client information (name, email, etc.)
 - Retrieve client config using QR code / file / email / Telegram
 
