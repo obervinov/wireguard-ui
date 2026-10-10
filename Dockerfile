@@ -61,7 +61,9 @@ FROM alpine:3.24
 RUN addgroup -S wgui && \
     adduser -S -D -G wgui wgui
 
-RUN apk --no-cache add ca-certificates wireguard-tools jq iptables
+# upgrade picks up Alpine fixes released after the base image was built
+RUN apk --no-cache upgrade && \
+    apk --no-cache add ca-certificates wireguard-tools jq iptables
 
 WORKDIR /app
 
