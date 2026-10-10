@@ -1,29 +1,63 @@
-![](https://github.com/ngoduykhanh/wireguard-ui/workflows/wireguard-ui%20build%20release/badge.svg)
-
 # wireguard-ui
+
+[![PR](https://github.com/obervinov/wireguard-ui/actions/workflows/pr.yaml/badge.svg)](https://github.com/obervinov/wireguard-ui/actions/workflows/pr.yaml)
+[![Release](https://github.com/obervinov/wireguard-ui/actions/workflows/release.yaml/badge.svg)](https://github.com/obervinov/wireguard-ui/actions/workflows/release.yaml)
+![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/obervinov/wireguard-ui?style=for-the-badge)
 
 A web user interface to manage your WireGuard setup.
 
+This is a maintained fork of [ngoduykhanh/wireguard-ui](https://github.com/ngoduykhanh/wireguard-ui), branched from
+upstream `v0.6.2`, which is no longer maintained. Images are published to `ghcr.io/obervinov/wireguard-ui`. What changed
+in each release is in [CHANGELOG.md](CHANGELOG.md).
+
+![Clients, dark theme](docs/screenshots/clients-dark.png)
+
 ## Features
 
-- Friendly UI
+- Friendly UI with light and dark themes; works offline, all assets are served by wgui itself
 - Authentication, with optional TOTP two-factor and recovery codes (Profile page)
 - Manage extra client information (name, email, etc.)
-- Retrieve client config using QR code / file / email / Telegram
+- Retrieve client config using QR code / file / email / Telegram, or a one-time Enclosed link
+- One shared Allowed IPs list for all clients, optionally synced from a cloud provider (currently DigitalOcean only)
 
-![wireguard-ui 0.3.7](https://user-images.githubusercontent.com/37958026/177041280-e3e7ca16-d4cf-4e95-9920-68af15e780dd.png)
+### Added in this fork
+
+- **Shared Allowed IPs.** One list appended to every client config, edited in Global Settings. It can also be filled
+  automatically from a cloud provider account. Currently only DigitalOcean is supported: with `WGUI_DO_TOKEN` set,
+  the list is refreshed with the public IPv4 of all droplets and all reserved IPs. The endpoint address is always left out.
+  A client can opt out with **Use shared Allowed IPs**, and its card shows the shared entries as dashed badges.
+- **Two-factor authentication.** TOTP from any authenticator app, 8 one-time recovery codes, a lockout after 5 wrong
+  codes, and an admin reset on the Users page.
+- **One-time share links.** With `WGUI_ENCLOSED_URL` set, **Share** on a client card encrypts the config in wgui and
+  stores it on an [Enclosed](https://github.com/CorentinTh/enclosed) instance as a note that is deleted after the first
+  read. The key stays in the link fragment, so the instance only sees ciphertext. The note includes a `.conf` file
+  that imports straight into the WireGuard app.
+- **New theme.** Light and dark mode that follows the system or the toggle in the navbar, and a layout that works on
+  a phone.
+- **Fixes.** `POST /login` no longer panics on missing fields; the user API no longer returns password hashes.
+
+## Screenshots
+
+| | |
+|---|---|
+| ![Clients, light theme](docs/screenshots/clients-light.png) | ![Edit client](docs/screenshots/edit-client-dark.png) |
+| ![Shared Allowed IPs](docs/screenshots/global-settings-dark.png) | ![Enable 2FA](docs/screenshots/profile-2fa-light.png) |
+| ![Sign in](docs/screenshots/login-dark.png) | ![Phone layout](docs/screenshots/clients-mobile-dark.png) |
 
 ## Run WireGuard-UI
 
 > ⚠️The default username and password are `admin`. Please change it to secure your setup.
 
-### Using binary file
-
-Download the binary file from the release page and run it directly on the host machine
+### Using docker
 
 ```
-./wireguard-ui
+docker run -d --name wireguard-ui --cap-add NET_ADMIN --network host \
+  -v /etc/wireguard:/etc/wireguard -v ./db:/app/db \
+  ghcr.io/obervinov/wireguard-ui:latest
 ```
+
+Pin a release tag (for example `v0.8.0`) instead of `latest` in production. Prebuilt binaries are not published; see
+[Build binary file](#build-binary-file).
 
 ### Using docker compose
 
@@ -64,7 +98,7 @@ docker-compose up
 | `WGUI_TABLE`                  | The default WireGuard table value settings                                                                                                                                                                                                                                          | `auto`                             |
 | `WGUI_CONFIG_FILE_PATH`       | The default WireGuard config file path used in global settings                                                                                                                                                                                                                      | `/etc/wireguard/wg0.conf`          |
 | `WGUI_LOG_LEVEL`              | The default log level. Possible values: `DEBUG`, `INFO`, `WARN`, `ERROR`, `OFF`                                                                                                                                                                                                     | `INFO`                             |
-| `WG_CONF_TEMPLATE`            | The custom `wg.conf` config file template. Please refer to our [default template](https://github.com/ngoduykhanh/wireguard-ui/blob/master/templates/wg.conf)                                                                                                                        | N/A                                |
+| `WG_CONF_TEMPLATE`            | The custom `wg.conf` config file template. Please refer to our [default template](templates/wg.conf)                                                                                                                        | N/A                                |
 | `EMAIL_FROM_ADDRESS`          | The sender email address                                                                                                                                                                                                                                                            | N/A                                |
 | `EMAIL_FROM_NAME`             | The sender name                                                                                                                                                                                                                                                                     | `WireGuard UI`                     |
 | `SENDGRID_API_KEY`            | The SendGrid api key                                                                                                                                                                                                                                                                | N/A                                |
@@ -220,12 +254,12 @@ or
 docker compose build --build-arg=GIT_COMMIT=$(git rev-parse --short HEAD)
 ```
 
-:information_source: A container image is available on [Docker Hub](https://hub.docker.com/r/ngoduykhanh/wireguard-ui)
-which you can pull and use
+:information_source: Prebuilt images are published to
+[GHCR](https://github.com/obervinov/wireguard-ui/pkgs/container/wireguard-ui):
 
 ```
-docker pull ngoduykhanh/wireguard-ui
-````
+docker pull ghcr.io/obervinov/wireguard-ui:latest
+```
 
 ### Build binary file
 
@@ -243,10 +277,11 @@ go build -o wireguard-ui
 
 ## License
 
-MIT. See [LICENSE](https://github.com/ngoduykhanh/wireguard-ui/blob/master/LICENSE).
+MIT. See [LICENSE](LICENSE).
 
-## Support
+## Thanks
 
-If you like the project and want to support it, you can *buy me a coffee* ☕
-
-<a href="https://www.buymeacoffee.com/khanhngo" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+Thanks to [Khanh Ngo](https://github.com/ngoduykhanh) and all contributors of
+[ngoduykhanh/wireguard-ui](https://github.com/ngoduykhanh/wireguard-ui) for the project this fork is built on.
+If it helped you, you can support the original author: [buy Khanh Ngo a coffee](https://www.buymeacoffee.com/khanhngo).
+This fork does not take donations.
