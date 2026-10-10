@@ -8,6 +8,7 @@ Fork of [ngoduykhanh/wireguard-ui](https://github.com/ngoduykhanh/wireguard-ui) 
 * Go 1.21 → 1.26 (`go.mod`); the image builds with `golang:1.27-alpine3.24` and runs on `alpine:3.24` (was 3.19).
 * All Go modules updated, among them `golang.org/x/crypto` 0.17 → 0.58, `labstack/echo/v4` 4.11 → 4.16, `labstack/echo-contrib` 0.15 → 0.50, `gorilla/sessions` 1.2 → 1.4, `NicoNex/echotron/v3` 3.27 → 3.46, `wgctrl` 2021 → 2024.
 * AdminLTE 3.0.4 → 3.2.0, which brings jQuery 3.7.1 and Bootstrap 4.6.2 (was jQuery 3.4/3.5, Bootstrap 4.4).
+* Dependabot checks Go modules, npm, the Dockerfile base images and the workflow templates weekly; minor and patch Go bumps arrive as one PR, AdminLTE 4 is skipped.
 #### 🐛 Bug Fixes
 * Telegram replies use `ReplyParameters`, the field echotron now takes instead of `ReplyToMessageID`.
 
