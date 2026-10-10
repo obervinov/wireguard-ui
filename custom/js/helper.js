@@ -1,3 +1,21 @@
+// shared AllowedIPs (static + synced), filled by the clients page before rendering
+let sharedAllowedIPs = [];
+
+// mergeIPLists concatenates lists, dropping empties and duplicates, keeping order
+function mergeIPLists(...lists) {
+    const seen = new Set();
+    const out = [];
+    lists.forEach(function(list) {
+        (list || []).forEach(function(ip) {
+            if (ip && !seen.has(ip)) {
+                seen.add(ip);
+                out.push(ip);
+            }
+        });
+    });
+    return out;
+}
+
 function renderClientList(data) {
     $.each(data, function(index, obj) {
         // render telegram button
@@ -32,6 +50,15 @@ function renderClientList(data) {
         $.each(obj.Client.allowed_ips, function(index, obj) {
             allowedIpsHtml += `<small class="badge badge-secondary">${obj}</small>&nbsp;`;
         })
+        // shared entries end up in the client config too, unless the client opted out
+        if (!obj.Client.exclude_shared_allowed_ips) {
+            const own = new Set(obj.Client.allowed_ips || []);
+            $.each(sharedAllowedIPs, function(index, ip) {
+                if (!own.has(ip)) {
+                    allowedIpsHtml += `<small class="badge badge-shared" title="Shared Allowed IPs">${ip}</small>&nbsp;`;
+                }
+            })
+        }
 
         let subnetRangesString = "";
         if (obj.Client.subnet_ranges && obj.Client.subnet_ranges.length > 0) {

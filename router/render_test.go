@@ -29,7 +29,7 @@ func TestGlobalSettingsRendersSharedAllowedIPs(t *testing.T) {
 			t.Fatalf("sync=%v: render failed: %v", syncEnabled, err)
 		}
 		out := buf.String()
-		for _, want := range []string{`id="card_shared_allowed_ips"`, `addTag('192.168.88.0/24')`, `id="exclude_shared_allowed_ips"`} {
+		for _, want := range []string{`id="card_shared_allowed_ips"`, `addTag('192.168.88.0/24')`, `id="use_shared_allowed_ips" checked`} {
 			if !strings.Contains(out, want) {
 				t.Errorf("sync=%v: output misses %s", syncEnabled, want)
 			}
@@ -50,7 +50,7 @@ func TestClientsPageRenders(t *testing.T) {
 	if err != nil {
 		t.Fatalf("render failed: %v", err)
 	}
-	if !strings.Contains(buf.String(), `id="_exclude_shared_allowed_ips"`) {
-		t.Error("edit modal misses the exclude checkbox")
+	if !strings.Contains(buf.String(), `id="_use_shared_allowed_ips"`) {
+		t.Error("edit modal misses the use-shared checkbox")
 	}
 }

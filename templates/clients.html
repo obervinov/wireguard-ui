@@ -154,9 +154,9 @@ Wireguard Clients
                     </div>
                     <div class="form-group">
                         <div class="icheck-primary d-inline">
-                            <input type="checkbox" id="_exclude_shared_allowed_ips">
-                            <label for="_exclude_shared_allowed_ips">
-                                Exclude shared Allowed IPs
+                            <input type="checkbox" id="_use_shared_allowed_ips">
+                            <label for="_use_shared_allowed_ips">
+                                Use shared Allowed IPs
                             </label>
                         </div>
                     </div>
@@ -269,6 +269,23 @@ Wireguard Clients
 {{define "bottom_js"}}
     <script>
         function populateClientList() {
+            // the shared list is shown on every client card, so load it first; a failure
+            // only hides the shared badges, it must not block the client list
+            $.ajax({
+                cache: false,
+                method: 'GET',
+                url: '{{.basePath}}/api/shared-allowed-ips',
+                dataType: 'json',
+                success: function (data) {
+                    sharedAllowedIPs = mergeIPLists(data.static_ips, data.synced_ips);
+                },
+                complete: function () {
+                    loadClients();
+                }
+            });
+        }
+
+        function loadClients() {
             $.ajax({
                 cache: false,
                 method: 'GET',
@@ -663,7 +680,7 @@ Wireguard Clients
                         modal.find("#_client_endpoint").val(client.endpoint);
 
                         modal.find("#_use_server_dns").prop("checked", client.use_server_dns);
-                        modal.find("#_exclude_shared_allowed_ips").prop("checked", client.exclude_shared_allowed_ips);
+                        modal.find("#_use_shared_allowed_ips").prop("checked", !client.exclude_shared_allowed_ips);
                         modal.find("#_enabled").prop("checked", client.enabled);
 
                         modal.find("#_client_public_key").val(client.public_key);
@@ -770,7 +787,7 @@ Wireguard Clients
             const telegram_userid = $("#_client_telegram_userid").val();
             const allocated_ips = $("#_client_allocated_ips").val().split(",");
             const allowed_ips = $("#_client_allowed_ips").val().split(",").filter(Boolean);
-            const exclude_shared_allowed_ips = $("#_exclude_shared_allowed_ips").is(':checked');
+            const exclude_shared_allowed_ips = !$("#_use_shared_allowed_ips").is(':checked');
             let use_server_dns = false;
             let extra_allowed_ips = [];
             const public_key = $("#_client_public_key").val();

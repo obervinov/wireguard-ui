@@ -665,6 +665,8 @@ div.tagsinput div { color: var(--wg-text); }
 .badge-danger { background: var(--wg-danger-soft); color: var(--wg-danger); }
 .badge-warning { background: var(--wg-warning-soft); color: var(--wg-warning); }
 .badge-primary, .badge-info { background: var(--wg-accent-soft); color: var(--wg-accent); }
+/* shared AllowedIPs on a client card: in the config, but managed in Global Settings */
+.badge-shared { background: var(--wg-accent-soft); color: var(--wg-accent); border: 1px dashed var(--wg-accent); }
 
 /* ---------- Tables ---------- */
 

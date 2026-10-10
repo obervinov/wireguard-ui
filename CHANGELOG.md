@@ -2,6 +2,12 @@
 
 Fork of [ngoduykhanh/wireguard-ui](https://github.com/ngoduykhanh/wireguard-ui) `v0.6.2`, which is no longer maintained.
 
+## v0.7.1 - 2026-10-10
+### What's Changed
+#### 🚀 Features
+* Client cards list the shared AllowedIPs next to the client's own (dashed badges), so a card shows everything that ends up in the client config.
+* The per-client toggle is now **Use shared Allowed IPs** (on by default) instead of **Exclude shared Allowed IPs**; stored data and the API field are unchanged.
+
 ## v0.7.0 - 2026-10-09
 ### What's Changed
 #### 🚀 Features
