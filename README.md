@@ -283,6 +283,5 @@ MIT. See [LICENSE](LICENSE).
 
 Thanks to [Khanh Ngo](https://github.com/ngoduykhanh) and all contributors of
 [ngoduykhanh/wireguard-ui](https://github.com/ngoduykhanh/wireguard-ui) for the project this fork is built on.
-If it helped you, you can support the original author:
-
-<a href="https://www.buymeacoffee.com/khanhngo" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+If it helped you, you can support the original author: [buy Khanh Ngo a coffee](https://www.buymeacoffee.com/khanhngo).
+This fork does not take donations.

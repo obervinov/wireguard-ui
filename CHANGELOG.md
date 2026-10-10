@@ -5,7 +5,7 @@ Fork of [ngoduykhanh/wireguard-ui](https://github.com/ngoduykhanh/wireguard-ui) 
 ## v0.8.1 - 2026-10-10
 ### What's Changed
 #### 📚 Documentation
-* README: fork notice (upstream `v0.6.2`), what the fork adds, fresh screenshots in `docs/screenshots/`, GHCR image instead of Docker Hub, thanks to the upstream author. The docker-compose examples use `ghcr.io/obervinov/wireguard-ui`.
+* README: fork notice (upstream `v0.6.2`), what the fork adds, fresh screenshots in `docs/screenshots/`, GHCR image instead of Docker Hub, thanks to the upstream author with a text link to his Buy Me a Coffee page. The repository no longer shows a **Sponsor** button (`.github/FUNDING.yml` pointed at the upstream author). The docker-compose examples use `ghcr.io/obervinov/wireguard-ui`.
 #### 🐛 Bug Fixes
 * Global Settings: the Shared Allowed IPs help still referred to the old **Exclude shared Allowed IPs** toggle; it now names **Use shared Allowed IPs**.
 
