@@ -18,12 +18,13 @@ in each release is in [CHANGELOG.md](CHANGELOG.md).
 - Authentication, with optional TOTP two-factor and recovery codes (Profile page)
 - Manage extra client information (name, email, etc.)
 - Retrieve client config using QR code / file / email / Telegram, or a one-time Enclosed link
-- One shared Allowed IPs list for all clients, optionally synced from DigitalOcean
+- One shared Allowed IPs list for all clients, optionally synced from a cloud provider (currently DigitalOcean only)
 
 ### Added in this fork
 
-- **Shared Allowed IPs.** One list appended to every client config, edited in Global Settings. With `WGUI_DO_TOKEN` set
-  it is refreshed with the public IPv4 of all droplets and all reserved IPs; the endpoint address is always left out.
+- **Shared Allowed IPs.** One list appended to every client config, edited in Global Settings. It can also be filled
+  automatically from a cloud provider account. Currently only DigitalOcean is supported: with `WGUI_DO_TOKEN` set,
+  the list is refreshed with the public IPv4 of all droplets and all reserved IPs. The endpoint address is always left out.
   A client can opt out with **Use shared Allowed IPs**, and its card shows the shared entries as dashed badges.
 - **Two-factor authentication.** TOTP from any authenticator app, 8 one-time recovery codes, a lockout after 5 wrong
   codes, and an admin reset on the Users page.
