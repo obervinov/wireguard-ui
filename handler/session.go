@@ -8,8 +8,13 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
+	"github.com/ngoduykhanh/wireguard-ui/model"
 	"github.com/ngoduykhanh/wireguard-ui/util"
+	"github.com/rs/xid"
 )
+
+// pendingLoginTTL is how long the code step stays open after a correct password
+const pendingLoginTTL = 5 * 60
 
 func ValidSession(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
@@ -222,6 +227,91 @@ func setUser(c echo.Context, username string, admin bool, userCRC32 uint32) {
 	sess.Save(c.Request(), c.Response())
 }
 
+// startSession signs the user in: a full session plus the session_token cookie
+func startSession(c echo.Context, dbuser model.User, rememberMe bool) {
+	ageMax := 0
+	if rememberMe {
+		ageMax = 86400 * 7
+	}
+
+	cookiePath := util.GetCookiePath()
+
+	sess, _ := session.Get("session", c)
+	sess.Options = &sessions.Options{
+		Path:     cookiePath,
+		MaxAge:   ageMax,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+	}
+
+	// set session_token
+	tokenUID := xid.New().String()
+	now := time.Now().UTC().Unix()
+	clearPendingLogin(sess)
+	sess.Values["username"] = dbuser.Username
+	sess.Values["user_hash"] = util.GetDBUserCRC32(dbuser)
+	sess.Values["admin"] = dbuser.Admin
+	sess.Values["session_token"] = tokenUID
+	sess.Values["max_age"] = ageMax
+	sess.Values["created_at"] = now
+	sess.Values["updated_at"] = now
+	sess.Save(c.Request(), c.Response())
+
+	// set session_token in cookie
+	cookie := new(http.Cookie)
+	cookie.Name = "session_token"
+	cookie.Path = cookiePath
+	cookie.Value = tokenUID
+	cookie.MaxAge = ageMax
+	cookie.HttpOnly = true
+	cookie.SameSite = http.SameSiteLaxMode
+	c.SetCookie(cookie)
+}
+
+// startPendingLogin records a correct password for a user with a second factor.
+// It sets no session_token, so isValidSession keeps rejecting the session until
+// the code step calls startSession.
+func startPendingLogin(c echo.Context, username string, rememberMe bool) {
+	sess, _ := session.Get("session", c)
+	sess.Options = &sessions.Options{
+		Path:     util.GetCookiePath(),
+		MaxAge:   pendingLoginTTL,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+	}
+	sess.Values["username"] = ""
+	sess.Values["session_token"] = ""
+	sess.Values["pending_user"] = username
+	sess.Values["pending_remember"] = rememberMe
+	sess.Values["pending_until"] = time.Now().UTC().Unix() + pendingLoginTTL
+	sess.Save(c.Request(), c.Response())
+}
+
+// pendingLogin returns the user waiting for the code step, if it has not expired
+func pendingLogin(c echo.Context) (username string, rememberMe bool, ok bool) {
+	sess, _ := session.Get("session", c)
+	username, _ = sess.Values["pending_user"].(string)
+	rememberMe, _ = sess.Values["pending_remember"].(bool)
+	until, _ := sess.Values["pending_until"].(int64)
+	if username == "" || until < time.Now().UTC().Unix() {
+		return "", false, false
+	}
+	return username, rememberMe, true
+}
+
+func clearPendingLogin(sess *sessions.Session) {
+	delete(sess.Values, "pending_user")
+	delete(sess.Values, "pending_remember")
+	delete(sess.Values, "pending_until")
+}
+
+// dropPendingLogin ends the code step; the user has to enter the password again
+func dropPendingLogin(c echo.Context) {
+	sess, _ := session.Get("session", c)
+	clearPendingLogin(sess)
+	sess.Save(c.Request(), c.Response())
+}
+
 // clearSession to remove current session
 func clearSession(c echo.Context) {
 	sess, _ := session.Get("session", c)
@@ -230,6 +320,7 @@ func clearSession(c echo.Context) {
 	sess.Values["admin"] = false
 	sess.Values["session_token"] = ""
 	sess.Values["max_age"] = -1
+	clearPendingLogin(sess)
 	sess.Options.MaxAge = -1
 	sess.Save(c.Request(), c.Response())
 

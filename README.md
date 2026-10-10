@@ -7,7 +7,7 @@ A web user interface to manage your WireGuard setup.
 ## Features
 
 - Friendly UI
-- Authentication
+- Authentication, with optional TOTP two-factor and recovery codes (Profile page)
 - Manage extra client information (name, email, etc.)
 - Retrieve client config using QR code / file / email / Telegram
 
@@ -48,6 +48,8 @@ docker-compose up
 | `WGUI_DO_TOKEN_FILE`          | The same as `WGUI_DO_TOKEN`, read from a file | N/A |
 | `WGUI_DO_SYNC_INTERVAL`       | How often the DigitalOcean sync runs, as a Go duration | `15m` |
 | `WGUI_DO_SYNC_EXCLUDE`        | Comma-separated IPs to leave out of the DigitalOcean sync | N/A |
+| `WGUI_ENCLOSED_URL`           | Base URL of an [Enclosed](https://github.com/CorentinTh/enclosed) instance, e.g. `https://enclosed.example.com`. When set, client cards get a **Share** button that encrypts the config locally and returns a one-time link (deleted after the first read). The instance must not require authentication | N/A |
+| `WGUI_ENCLOSED_TTL`           | How long a shared link stays valid, as a Go duration, clamped to Enclosed's `10m`..`720h` | `1h` |
 | `WGUI_USERNAME`               | The username for the login page. Used for db initialization only                                                                                                                                                                                                                    | `admin`                            |
 | `WGUI_PASSWORD`               | The password for the user on the login page. Will be hashed automatically. Used for db initialization only                                                                                                                                                                          | `admin`                            |
 | `WGUI_PASSWORD_FILE`          | Optional filepath for the user login password. Will be hashed automatically. Used for db initialization only. Leave `WGUI_PASSWORD` blank to take effect                                                                                                                            | N/A                                |

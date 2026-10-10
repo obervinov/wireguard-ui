@@ -121,6 +121,28 @@ Users Settings
     })
 
     // modal_remove_user modal event
+    // an admin removes the second factor of a user who lost both the phone and the recovery codes
+    $(document).on('click', '.btn-reset-2fa', function () {
+        const username = $(this).data('username');
+        $.ajax({
+            cache: false,
+            method: 'POST',
+            url: '{{.basePath}}/api/2fa/reset',
+            dataType: 'json',
+            contentType: "application/json",
+            data: JSON.stringify({"username": String(username)}),
+            success: function (data) {
+                toastr.success(data['message']);
+                $('#users-list').empty();
+                populateUsersList();
+            },
+            error: function (jqXHR, exception) {
+                const responseJson = jQuery.parseJSON(jqXHR.responseText);
+                toastr.error(responseJson['message']);
+            }
+        });
+    });
+
     $("#modal_remove_user").on('show.bs.modal', function (event) {
         const button = $(event.relatedTarget);
         const user_name = button.data('username');

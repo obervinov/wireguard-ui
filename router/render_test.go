@@ -2,6 +2,7 @@ package router
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -29,7 +30,7 @@ func TestGlobalSettingsRendersSharedAllowedIPs(t *testing.T) {
 			t.Fatalf("sync=%v: render failed: %v", syncEnabled, err)
 		}
 		out := buf.String()
-		for _, want := range []string{`id="card_shared_allowed_ips"`, `addTag('192.168.88.0/24')`, `id="exclude_shared_allowed_ips"`} {
+		for _, want := range []string{`id="card_shared_allowed_ips"`, `addTag('192.168.88.0/24')`, `id="use_shared_allowed_ips" checked`} {
 			if !strings.Contains(out, want) {
 				t.Errorf("sync=%v: output misses %s", syncEnabled, want)
 			}
@@ -42,15 +43,47 @@ func TestGlobalSettingsRendersSharedAllowedIPs(t *testing.T) {
 
 func TestClientsPageRenders(t *testing.T) {
 	app := New(os.DirFS("../templates"), map[string]interface{}{"basePath": ""}, [64]byte{})
-	var buf bytes.Buffer
-	err := app.Renderer.Render(&buf, "clients.html", map[string]interface{}{
-		"baseData":       model.BaseData{Active: "", CurrentUser: "admin", Admin: true},
-		"clientDataList": []model.ClientData{},
-	}, nil)
-	if err != nil {
-		t.Fatalf("render failed: %v", err)
+	for _, share := range []bool{true, false} {
+		var buf bytes.Buffer
+		err := app.Renderer.Render(&buf, "clients.html", map[string]interface{}{
+			"baseData":       model.BaseData{Active: "", CurrentUser: "admin", Admin: true},
+			"clientDataList": []model.ClientData{},
+			"shareEnabled":   share,
+		}, nil)
+		if err != nil {
+			t.Fatalf("render failed: %v", err)
+		}
+		out := buf.String()
+		if !strings.Contains(out, `id="_use_shared_allowed_ips"`) {
+			t.Error("edit modal misses the use-shared checkbox")
+		}
+		if !strings.Contains(out, `id="modal_share_client"`) {
+			t.Error("share modal is missing")
+		}
+		if want := fmt.Sprintf("shareEnabled = %t;", share); !strings.Contains(out, want) {
+			t.Errorf("share=%t: output misses %q", share, want)
+		}
 	}
-	if !strings.Contains(buf.String(), `id="_exclude_shared_allowed_ips"`) {
-		t.Error("edit modal misses the exclude checkbox")
+}
+
+func TestTwoFactorPagesRender(t *testing.T) {
+	app := New(os.DirFS("../templates"), map[string]interface{}{"basePath": ""}, [64]byte{})
+	for page, wants := range map[string][]string{
+		"profile.html":        {`id="card_2fa"`, `id="btn_totp_setup"`, `id="btn_totp_enable"`, `id="btn_totp_disable"`, `/api/2fa/`},
+		"login.html":          {`id="frm_totp"`, `id="totp_code"`, `/login/2fa`, `totp_required`},
+		"users_settings.html": {`.btn-reset-2fa`, `/api/2fa/reset`},
+	} {
+		var buf bytes.Buffer
+		err := app.Renderer.Render(&buf, page, map[string]interface{}{
+			"baseData": model.BaseData{Active: "profile", CurrentUser: "admin", Admin: true},
+		}, nil)
+		if err != nil {
+			t.Fatalf("%s: render failed: %v", page, err)
+		}
+		for _, want := range wants {
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("%s: output misses %s", page, want)
+			}
+		}
 	}
 }

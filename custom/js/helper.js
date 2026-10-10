@@ -1,3 +1,23 @@
+// shared AllowedIPs (static + synced), filled by the clients page before rendering
+let sharedAllowedIPs = [];
+// set by the clients page when an Enclosed instance is configured
+let shareEnabled = false;
+
+// mergeIPLists concatenates lists, dropping empties and duplicates, keeping order
+function mergeIPLists(...lists) {
+    const seen = new Set();
+    const out = [];
+    lists.forEach(function(list) {
+        (list || []).forEach(function(ip) {
+            if (ip && !seen.has(ip)) {
+                seen.add(ip);
+                out.push(ip);
+            }
+        });
+    });
+    return out;
+}
+
 function renderClientList(data) {
     $.each(data, function(index, obj) {
         // render telegram button
@@ -32,6 +52,15 @@ function renderClientList(data) {
         $.each(obj.Client.allowed_ips, function(index, obj) {
             allowedIpsHtml += `<small class="badge badge-secondary">${obj}</small>&nbsp;`;
         })
+        // shared entries end up in the client config too, unless the client opted out
+        if (!obj.Client.exclude_shared_allowed_ips) {
+            const own = new Set(obj.Client.allowed_ips || []);
+            $.each(sharedAllowedIPs, function(index, ip) {
+                if (!own.has(ip)) {
+                    allowedIpsHtml += `<small class="badge badge-shared" title="Shared Allowed IPs">${ip}</small>&nbsp;`;
+                }
+            })
+        }
 
         let subnetRangesString = "";
         if (obj.Client.subnet_ranges && obj.Client.subnet_ranges.length > 0) {
@@ -53,6 +82,11 @@ function renderClientList(data) {
                                 <div class="btn-group">
                                     <a href="download?clientid=${obj.Client.id}" class="btn btn-outline-primary btn-sm">Download</a>
                                 </div>
+                                ${shareEnabled ? `<div class="btn-group">
+                                    <button type="button" class="btn btn-outline-primary btn-sm" data-toggle="modal"
+                                        data-target="#modal_share_client" data-clientid="${obj.Client.id}"
+                                        data-clientname="${obj.Client.name}">Share</button>
+                                </div>` : ''}
                                 <div class="btn-group">      
                                     <button type="button" class="btn btn-outline-primary btn-sm" data-toggle="modal"
                                         data-target="#modal_qr_client" data-clientid="${obj.Client.id}"
@@ -129,6 +163,9 @@ function renderUserList(data) {
                                 <hr>
                                 <span class="info-box-text"><i class="fas fa-user"></i> ${obj.username}</span>
                                 <span class="info-box-text"><i class="fas fa-terminal"></i> ${obj.admin? 'Administrator':'Manager'}</span>
+                                <span class="info-box-text"><i class="fas fa-key" style="${obj.totp_enabled ? "opacity: 1.0" : "opacity: 0.5"}"></i>
+                                    ${obj.totp_enabled ? '2FA enabled' : '2FA disabled'}</span>
+                                ${obj.totp_enabled ? `<div><button type="button" class="btn btn-outline-danger btn-sm btn-reset-2fa" data-username="${obj.username}">Reset 2FA</button></div>` : ''}
                                 </div>
                         </div>
                     </div>`
