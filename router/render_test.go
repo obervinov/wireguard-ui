@@ -2,6 +2,7 @@ package router
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -42,16 +43,26 @@ func TestGlobalSettingsRendersSharedAllowedIPs(t *testing.T) {
 
 func TestClientsPageRenders(t *testing.T) {
 	app := New(os.DirFS("../templates"), map[string]interface{}{"basePath": ""}, [64]byte{})
-	var buf bytes.Buffer
-	err := app.Renderer.Render(&buf, "clients.html", map[string]interface{}{
-		"baseData":       model.BaseData{Active: "", CurrentUser: "admin", Admin: true},
-		"clientDataList": []model.ClientData{},
-	}, nil)
-	if err != nil {
-		t.Fatalf("render failed: %v", err)
-	}
-	if !strings.Contains(buf.String(), `id="_use_shared_allowed_ips"`) {
-		t.Error("edit modal misses the use-shared checkbox")
+	for _, share := range []bool{true, false} {
+		var buf bytes.Buffer
+		err := app.Renderer.Render(&buf, "clients.html", map[string]interface{}{
+			"baseData":       model.BaseData{Active: "", CurrentUser: "admin", Admin: true},
+			"clientDataList": []model.ClientData{},
+			"shareEnabled":   share,
+		}, nil)
+		if err != nil {
+			t.Fatalf("render failed: %v", err)
+		}
+		out := buf.String()
+		if !strings.Contains(out, `id="_use_shared_allowed_ips"`) {
+			t.Error("edit modal misses the use-shared checkbox")
+		}
+		if !strings.Contains(out, `id="modal_share_client"`) {
+			t.Error("share modal is missing")
+		}
+		if want := fmt.Sprintf("shareEnabled = %t;", share); !strings.Contains(out, want) {
+			t.Errorf("share=%t: output misses %q", share, want)
+		}
 	}
 }
 

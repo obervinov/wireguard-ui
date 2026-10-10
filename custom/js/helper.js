@@ -1,5 +1,7 @@
 // shared AllowedIPs (static + synced), filled by the clients page before rendering
 let sharedAllowedIPs = [];
+// set by the clients page when an Enclosed instance is configured
+let shareEnabled = false;
 
 // mergeIPLists concatenates lists, dropping empties and duplicates, keeping order
 function mergeIPLists(...lists) {
@@ -80,6 +82,11 @@ function renderClientList(data) {
                                 <div class="btn-group">
                                     <a href="download?clientid=${obj.Client.id}" class="btn btn-outline-primary btn-sm">Download</a>
                                 </div>
+                                ${shareEnabled ? `<div class="btn-group">
+                                    <button type="button" class="btn btn-outline-primary btn-sm" data-toggle="modal"
+                                        data-target="#modal_share_client" data-clientid="${obj.Client.id}"
+                                        data-clientname="${obj.Client.name}">Share</button>
+                                </div>` : ''}
                                 <div class="btn-group">      
                                     <button type="button" class="btn btn-outline-primary btn-sm" data-toggle="modal"
                                         data-target="#modal_qr_client" data-clientid="${obj.Client.id}"

@@ -80,6 +80,34 @@ Wireguard Clients
 </div>
 <!-- /.modal -->
 
+<div class="modal fade" id="modal_share_client">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Share link</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p id="share_status">Creating a one-time link...</p>
+                <div id="share_result" style="display: none">
+                    <div class="input-group mb-2">
+                        <input type="text" class="form-control" id="share_url" readonly>
+                        <div class="input-group-append">
+                            <button type="button" class="btn btn-primary" id="btn_share_copy">Copy</button>
+                        </div>
+                    </div>
+                    <small class="text-muted">Opens once, then it is deleted. Expires <span id="share_expires"></span>.
+                        The config is encrypted before it is sent; the key is only in the link.</small>
+                    <img id="share_qr" class="w-100 mt-2" style="image-rendering: pixelated;" src="" alt="QR code of the link" />
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- /.modal -->
+
 <div class="modal fade" id="modal_telegram_client">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -268,6 +296,8 @@ Wireguard Clients
 
 {{define "bottom_js"}}
     <script>
+        shareEnabled = {{if .shareEnabled}}true{{else}}false{{end}};
+
         function populateClientList() {
             // the shared list is shown on every client card, so load it first; a failure
             // only hides the shared badges, it must not block the client list
@@ -868,6 +898,44 @@ Wireguard Clients
                     const responseJson = jQuery.parseJSON(jqXHR.responseText);
                     toastr.error(responseJson['message']);
                 }
+            });
+        });
+
+        // every open creates a new link: a link is single-use, so reusing one would hand out a dead link
+        $("#modal_share_client").on('show.bs.modal', function (event) {
+            const button = $(event.relatedTarget);
+            const modal = $(this);
+            modal.find('.modal-title').text("Share " + button.data('clientname'));
+            $("#share_result").hide();
+            $("#share_status").text("Creating a one-time link...").show();
+            $.ajax({
+                cache: false,
+                method: 'POST',
+                url: '{{.basePath}}/api/client/share',
+                dataType: 'json',
+                contentType: "application/json",
+                data: JSON.stringify({"id": button.data('clientid')}),
+                success: function (resp) {
+                    $("#share_url").val(resp.url);
+                    $("#share_expires").text(prettyDateTime(resp.expires_at));
+                    $("#share_qr").attr('src', resp.qr || '').toggle(Boolean(resp.qr));
+                    $("#share_status").hide();
+                    $("#share_result").show();
+                },
+                error: function (jqXHR) {
+                    const responseJson = jQuery.parseJSON(jqXHR.responseText);
+                    $("#share_status").text(responseJson['message']);
+                }
+            });
+        });
+
+        $("#btn_share_copy").click(function () {
+            const url = $("#share_url").val();
+            navigator.clipboard.writeText(url).then(function () {
+                toastr.success('Link copied');
+            }, function () {
+                $("#share_url").select();
+                toastr.info('Press Ctrl+C / Cmd+C to copy');
             });
         });
 

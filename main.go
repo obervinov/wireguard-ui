@@ -20,6 +20,7 @@ import (
 	"github.com/ngoduykhanh/wireguard-ui/telegram"
 
 	"github.com/ngoduykhanh/wireguard-ui/emailer"
+	"github.com/ngoduykhanh/wireguard-ui/enclosed"
 	"github.com/ngoduykhanh/wireguard-ui/handler"
 	"github.com/ngoduykhanh/wireguard-ui/router"
 	"github.com/ngoduykhanh/wireguard-ui/sharedips"
@@ -57,6 +58,8 @@ var (
 	flagSubnetRanges             string
 	flagDOToken                  string
 	flagDOSyncInterval           = 15 * time.Minute
+	flagEnclosedURL              string
+	flagEnclosedTTL              = time.Hour
 )
 
 const (
@@ -132,6 +135,8 @@ func init() {
 	} else {
 		flag.StringVar(&flagDOToken, "do-token", util.LookupEnvOrFile("WGUI_DO_TOKEN_FILE", ""), "File containing the DigitalOcean API token.")
 	}
+	flag.StringVar(&flagEnclosedURL, "enclosed-url", util.LookupEnvOrString("WGUI_ENCLOSED_URL", ""), "Enclosed instance to share client configs through as one-time links.")
+	flag.DurationVar(&flagEnclosedTTL, "enclosed-ttl", util.LookupEnvOrDuration("WGUI_ENCLOSED_TTL", flagEnclosedTTL), "How long a shared client config link stays valid.")
 
 	flag.Parse()
 
@@ -211,6 +216,9 @@ func main() {
 		go sharedSyncer.Run(context.Background())
 	}
 
+	// one-time config links, disabled without an Enclosed instance
+	enclosedClient := enclosed.NewClient(flagEnclosedURL, flagEnclosedTTL)
+
 	// Check if subnet ranges are valid for the server configuration
 	// Remove any non-valid CIDRs
 	if err := util.ValidateAndFixSubnetRanges(db); err != nil {
@@ -225,7 +233,7 @@ func main() {
 	// register routes
 	app := router.New(tmplDir, extraData, util.SessionSecret)
 
-	app.GET(util.BasePath, handler.WireGuardClients(db), handler.ValidSession, handler.RefreshSession)
+	app.GET(util.BasePath, handler.WireGuardClients(db, enclosedClient), handler.ValidSession, handler.RefreshSession)
 
 	// Important: Make sure that all non-GET routes check the request content type using handler.ContentTypeJson to
 	// mitigate CSRF attacks. This is effective, because browsers don't allow setting the Content-Type header on
@@ -267,6 +275,7 @@ func main() {
 	app.POST(util.BasePath+"/client/set-status", handler.SetClientStatus(db), handler.ValidSession, handler.ContentTypeJson)
 	app.POST(util.BasePath+"/remove-client", handler.RemoveClient(db), handler.ValidSession, handler.ContentTypeJson)
 	app.GET(util.BasePath+"/download", handler.DownloadClient(db), handler.ValidSession)
+	app.POST(util.BasePath+"/api/client/share", handler.ShareClient(db, enclosedClient), handler.ValidSession, handler.ContentTypeJson)
 	app.GET(util.BasePath+"/wg-server", handler.WireGuardServer(db), handler.ValidSession, handler.RefreshSession, handler.NeedsAdmin)
 	app.POST(util.BasePath+"/wg-server/interfaces", handler.WireGuardServerInterfaces(db), handler.ValidSession, handler.ContentTypeJson, handler.NeedsAdmin)
 	app.POST(util.BasePath+"/wg-server/keypair", handler.WireGuardServerKeyPair(db), handler.ValidSession, handler.ContentTypeJson, handler.NeedsAdmin)

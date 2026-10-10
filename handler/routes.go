@@ -22,6 +22,7 @@ import (
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 
 	"github.com/ngoduykhanh/wireguard-ui/emailer"
+	"github.com/ngoduykhanh/wireguard-ui/enclosed"
 	"github.com/ngoduykhanh/wireguard-ui/model"
 	"github.com/ngoduykhanh/wireguard-ui/sharedips"
 	"github.com/ngoduykhanh/wireguard-ui/store"
@@ -324,7 +325,7 @@ func RemoveUser(db store.IStore) echo.HandlerFunc {
 }
 
 // WireGuardClients handler
-func WireGuardClients(db store.IStore) echo.HandlerFunc {
+func WireGuardClients(db store.IStore, share *enclosed.Client) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		clientDataList, err := db.GetClients(true)
 		if err != nil {
@@ -336,6 +337,7 @@ func WireGuardClients(db store.IStore) echo.HandlerFunc {
 		return c.Render(http.StatusOK, "clients.html", map[string]interface{}{
 			"baseData":       model.BaseData{Active: "", CurrentUser: currentUser(c), Admin: isAdmin(c)},
 			"clientDataList": clientDataList,
+			"shareEnabled":   share.Enabled(),
 		})
 	}
 }
