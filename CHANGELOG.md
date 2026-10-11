@@ -2,6 +2,11 @@
 
 Fork of [ngoduykhanh/wireguard-ui](https://github.com/ngoduykhanh/wireguard-ui) `v0.6.2`, which is no longer maintained.
 
+## v0.8.4 - 2026-10-11
+### What's Changed
+#### 📦 Dependencies
+* `moment` 2.24.0 → 2.31.0 in `yarn.lock` (CVE-2026-17495 and two older ReDoS advisories). It comes in through AdminLTE plugins that the image does not ship, so the running UI is unchanged.
+
 ## v0.8.3 - 2026-10-11
 ### What's Changed
 #### 🔒 Security
