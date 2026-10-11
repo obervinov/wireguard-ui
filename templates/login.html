@@ -127,13 +127,19 @@
 </body>
 <script>
     function redirectNext() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const nextURL = urlParams.get('next');
-        if (nextURL && /(?:^\/[a-zA-Z_])|(?:^\/$)/.test(nextURL.trim())) {
-            window.location.href = nextURL;
-        } else {
-            window.location.href = '/{{.basePath}}';
-        } 
+        const home = '{{.basePath}}/';
+        const nextURL = new URLSearchParams(window.location.search).get('next');
+        let target = home;
+        if (nextURL) {
+            try {
+                // resolving against this origin turns //host, http://host and javascript: into another origin
+                const url = new URL(nextURL, window.location.origin);
+                if (url.origin === window.location.origin) {
+                    target = url.pathname + url.search + url.hash;
+                }
+            } catch (e) {}
+        }
+        window.location.href = target;
     }
 </script>
 <script>

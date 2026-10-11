@@ -3,6 +3,7 @@ package util
 import (
 	"bufio"
 	"bytes"
+	"crypto/rand"
 	"encoding/gob"
 	"encoding/json"
 	"errors"
@@ -10,7 +11,7 @@ import (
 	"hash/crc32"
 	"io"
 	"io/fs"
-	"math/rand"
+	"math/big"
 	"net"
 	"os"
 	"path"
@@ -783,12 +784,17 @@ func UpdateHashes(db store.IStore) error {
 	return db.SaveHashes(clientServerHashes)
 }
 
+// RandomString is used for secrets such as the default session key, so it
+// reads crypto/rand: a time-seeded math/rand value can be guessed.
 func RandomString(length int) string {
-	var seededRand = rand.New(rand.NewSource(time.Now().UnixNano()))
 	charset := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	b := make([]byte, length)
 	for i := range b {
-		b[i] = charset[seededRand.Intn(len(charset))]
+		n, err := rand.Int(rand.Reader, big.NewInt(int64(len(charset))))
+		if err != nil {
+			panic(fmt.Sprintf("crypto/rand failed: %v", err))
+		}
+		b[i] = charset[n.Int64()]
 	}
 	return string(b)
 }
