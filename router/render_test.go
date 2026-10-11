@@ -87,3 +87,43 @@ func TestTwoFactorPagesRender(t *testing.T) {
 		}
 	}
 }
+
+func TestStatusPageRenders(t *testing.T) {
+	type peer struct {
+		Name, Email, PublicKey, Received, Transmitted, LastHandshake, Endpoint string
+		ReceivedBytes, TransmitBytes                                            int64
+		LastHandshakeTime                                                       time.Time
+		Connected                                                               bool
+		AllocatedIPs                                                            []string
+	}
+	type device struct {
+		Name, Received, Transmitted string
+		Online                      int
+		Peers                       []peer
+	}
+	devices := []device{{Name: "wg0", Online: 1, Received: "1.5 GiB", Transmitted: "200.0 MiB", Peers: []peer{
+		{Name: "laptop", Email: "alice@example.com", PublicKey: "J7Mgewxzu0maKFHQnxuNMEr14LPmzoOuXHrX+9hGq0I=", Received: "1.5 GiB", LastHandshake: "42s ago",
+			LastHandshakeTime: time.Date(2026, 10, 11, 12, 0, 0, 0, time.UTC), Connected: true, AllocatedIPs: []string{"10.252.1.2/32", "10.252.2.2/32"}, Endpoint: "198.51.100.7:51820"},
+		{PublicKey: "AJA4kQSME4SgBievqLYrftps+EQDzCmchsQSaPxw9H4=", LastHandshake: "never", AllocatedIPs: []string{"10.252.1.9/32"}},
+	}}}
+	app := New(os.DirFS("../templates"), map[string]interface{}{"basePath": ""}, [64]byte{})
+	for _, admin := range []bool{true, false} {
+		var buf bytes.Buffer
+		err := app.Renderer.Render(&buf, "status.html", map[string]interface{}{
+			"baseData": model.BaseData{Active: "status", CurrentUser: "admin", Admin: admin},
+			"devices":  devices,
+		}, nil)
+		if err != nil {
+			t.Fatalf("admin=%v: render failed: %v", admin, err)
+		}
+		out := buf.String()
+		for _, want := range []string{"1 of 2 online", ">10.252.2.2/32<", "AJA4kQSM…", "42s ago", `title="2026-10-11 12:00:00 UTC"`} {
+			if !strings.Contains(out, want) {
+				t.Errorf("admin=%v: output misses %s", admin, want)
+			}
+		}
+		if admin != strings.Contains(out, "198.51.100.7:51820") {
+			t.Errorf("admin=%v: endpoint visibility is wrong", admin)
+		}
+	}
+}

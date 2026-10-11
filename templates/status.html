@@ -1,5 +1,5 @@
 {{define "title"}}
-Connected Peers
+Status
 {{end}}
 
 {{define "top_css"}}
@@ -10,63 +10,67 @@ Connected Peers
 {{end}}
 
 {{define "page_title"}}
-Connected Peers
+Status
 {{end}}
 
 {{define "page_content"}}
-<script>
-  function bytesToHumanReadable(temporal) {
-    const units = [" ", " K", " M", " G", " T", " P", " E", " Z", " Y"]
-    let pow = 0
-
-    while (temporal > 1024) {
-      temporal /= 1024
-      pow ++
-      if (pow == units.length-1) break
-    }
-
-    return parseFloat(temporal.toFixed(2)) + units[pow]+"B"
-  }
-</script>
 <section class="content">
     <div class="container-fluid">
         {{ if .error }}
-        <div class="alert alert-warning" role="alert">{{.error}}</div>
-        {{ end}}
+        <div class="alert alert-warning" role="alert">{{ .error }}</div>
+        {{ end }}
         {{ range $dev := .devices }}
-            <table class="table table-sm">
-                <caption>List of connected peers for device with name {{ $dev.Name }} </caption>
-              <thead>
-                <tr>
-                  <th scope="col">#</th>
-                  <th scope="col">Name</th>
-                  <th scope="col">Email</th>
-                  <th scope="col">Allocated IPs</th>
-                  <th scope="col">Endpoint</th>
-                  <th scope="col">Public Key</th>
-                  <th scope="col">Received</th>
-                  <th scope="col">Transmitted</th>
-                  <th scope="col">Connected (Approximation)</th>
-                  <th scope="col">Last Handshake</th>
-                </tr>
-              </thead>
-              <tbody>
-              {{ range $idx, $peer := $dev.Peers }}
-              <tr {{ if $peer.Connected }} class="table-success" {{ end }}>
-                <th scope="row">{{ $idx }}</th>
-                <td>{{ $peer.Name }}</td>
-                <td>{{ $peer.Email }}</td>
-                <td>{{ $peer.AllocatedIP }}</td>
-                <td>{{ $peer.Endpoint }}</td>
-                <td>{{ $peer.PublicKey }}</td>
-                <td title="{{ $peer.ReceivedBytes }} Bytes"><script>document.write(bytesToHumanReadable({{ $peer.ReceivedBytes }}))</script></td>
-                <td title="{{ $peer.TransmitBytes }} Bytes"><script>document.write(bytesToHumanReadable({{ $peer.TransmitBytes }}))</script></td>
-                <td>{{ if $peer.Connected }}✓{{end}}</td>
-                <td>{{ $peer.LastHandshakeTime.Format "2006-01-02 15:04:05 MST" }}</td>
-               </tr>
-              {{ end }}
-              </tbody>
-            </table>
+        <div class="card wg-status">
+            <div class="card-header">
+                <h3 class="card-title"><code>{{ $dev.Name }}</code></h3>
+                <div class="wg-status-summary">
+                    <span><span class="wg-dot wg-dot-on"></span>{{ $dev.Online }} of {{ len $dev.Peers }} online</span>
+                    <span title="Received by the server"><i class="fas fa-arrow-down"></i> {{ $dev.Received }}</span>
+                    <span title="Sent by the server"><i class="fas fa-arrow-up"></i> {{ $dev.Transmitted }}</span>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm wg-status-table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Peer</th>
+                                <th class="d-none d-md-table-cell">Address</th>
+                                {{ if $.baseData.Admin }}<th class="d-none d-lg-table-cell">Endpoint</th>{{ end }}
+                                <th class="text-right d-none d-sm-table-cell">Received</th>
+                                <th class="text-right d-none d-sm-table-cell">Sent</th>
+                                <th class="text-right d-sm-none">Traffic</th>
+                                <th class="text-right d-none d-sm-table-cell">Handshake</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {{ range $peer := $dev.Peers }}
+                            <tr class="{{ if not $peer.Connected }}wg-status-idle{{ end }}">
+                                <td>
+                                    <div class="wg-status-peer" title="{{ $peer.PublicKey }}">
+                                        <span class="wg-dot {{ if $peer.Connected }}wg-dot-on{{ end }}"></span>
+                                        <div>
+                                            <div class="wg-status-name">{{ if $peer.Name }}{{ $peer.Name }}{{ else }}<code>{{ slice $peer.PublicKey 0 8 }}…</code>{{ end }}</div>
+                                            {{ if $peer.Email }}<div class="wg-status-email">{{ $peer.Email }}</div>{{ end }}
+                                            <div class="wg-status-email d-sm-none">handshake {{ $peer.LastHandshake }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="d-none d-md-table-cell">{{ range $peer.AllocatedIPs }}<code class="wg-status-ip">{{ . }}</code>{{ end }}</td>
+                                {{ if $.baseData.Admin }}<td class="d-none d-lg-table-cell"><code class="wg-status-ip">{{ $peer.Endpoint }}</code></td>{{ end }}
+                                <td class="text-right text-nowrap d-none d-sm-table-cell" title="{{ $peer.ReceivedBytes }} bytes">{{ $peer.Received }}</td>
+                                <td class="text-right text-nowrap d-none d-sm-table-cell" title="{{ $peer.TransmitBytes }} bytes">{{ $peer.Transmitted }}</td>
+                                <td class="text-right text-nowrap d-sm-none wg-status-traffic"><div><i class="fas fa-arrow-down"></i> {{ $peer.Received }}</div><div><i class="fas fa-arrow-up"></i> {{ $peer.Transmitted }}</div></td>
+                                <td class="text-right text-nowrap d-none d-sm-table-cell" {{ if not $peer.LastHandshakeTime.IsZero }}title="{{ $peer.LastHandshakeTime.Format "2006-01-02 15:04:05 MST" }}"{{ end }}>{{ $peer.LastHandshake }}</td>
+                            </tr>
+                        {{ else }}
+                            <tr><td colspan="7" class="text-muted text-center py-3">No peers on this interface</td></tr>
+                        {{ end }}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
         {{ end }}
     </div>
 </section>

@@ -905,16 +905,22 @@ func Status(db store.IStore) echo.HandlerFunc {
 		PublicKey         string
 		ReceivedBytes     int64
 		TransmitBytes     int64
+		Received          string
+		Transmitted       string
 		LastHandshakeTime time.Time
 		LastHandshakeRel  time.Duration
+		LastHandshake     string
 		Connected         bool
-		AllocatedIP       string
+		AllocatedIPs      []string
 		Endpoint          string
 	}
 
 	type DeviceVM struct {
-		Name  string
-		Peers []PeerVM
+		Name        string
+		Peers       []PeerVM
+		Online      int
+		Received    string
+		Transmitted string
 	}
 	return func(c echo.Context) error {
 		wgClient, err := wgctrl.New()
@@ -955,26 +961,33 @@ func Status(db store.IStore) echo.HandlerFunc {
 			conv := map[bool]int{true: 1, false: 0}
 			for i := range devices {
 				devVm := DeviceVM{Name: devices[i].Name}
+				var received, transmitted int64
 				for j := range devices[i].Peers {
-					var allocatedIPs string
-					for _, ip := range devices[i].Peers[j].AllowedIPs {
-						if len(allocatedIPs) > 0 {
-							allocatedIPs += "</br>"
-						}
-						allocatedIPs += ip.String()
+					peer := devices[i].Peers[j]
+					allocatedIPs := make([]string, 0, len(peer.AllowedIPs))
+					for _, ip := range peer.AllowedIPs {
+						allocatedIPs = append(allocatedIPs, ip.String())
 					}
 					pVm := PeerVM{
-						PublicKey:         devices[i].Peers[j].PublicKey.String(),
-						ReceivedBytes:     devices[i].Peers[j].ReceiveBytes,
-						TransmitBytes:     devices[i].Peers[j].TransmitBytes,
-						LastHandshakeTime: devices[i].Peers[j].LastHandshakeTime,
-						LastHandshakeRel:  time.Since(devices[i].Peers[j].LastHandshakeTime),
-						AllocatedIP:       allocatedIPs,
+						PublicKey:         peer.PublicKey.String(),
+						ReceivedBytes:     peer.ReceiveBytes,
+						TransmitBytes:     peer.TransmitBytes,
+						Received:          humanBytes(peer.ReceiveBytes),
+						Transmitted:       humanBytes(peer.TransmitBytes),
+						LastHandshakeTime: peer.LastHandshakeTime,
+						LastHandshakeRel:  time.Since(peer.LastHandshakeTime),
+						LastHandshake:     handshakeAgo(peer.LastHandshakeTime, time.Now()),
+						AllocatedIPs:      allocatedIPs,
 					}
-					pVm.Connected = pVm.LastHandshakeRel.Minutes() < 3.
+					pVm.Connected = !peer.LastHandshakeTime.IsZero() && pVm.LastHandshakeRel.Minutes() < 3.
+					if pVm.Connected {
+						devVm.Online++
+					}
+					received += peer.ReceiveBytes
+					transmitted += peer.TransmitBytes
 
-					if isAdmin(c) {
-						pVm.Endpoint = devices[i].Peers[j].Endpoint.String()
+					if isAdmin(c) && peer.Endpoint != nil {
+						pVm.Endpoint = peer.Endpoint.String()
 					}
 
 					if _client, ok := m[pVm.PublicKey]; ok {
@@ -983,6 +996,8 @@ func Status(db store.IStore) echo.HandlerFunc {
 					}
 					devVm.Peers = append(devVm.Peers, pVm)
 				}
+				devVm.Received = humanBytes(received)
+				devVm.Transmitted = humanBytes(transmitted)
 				sort.SliceStable(devVm.Peers, func(i, j int) bool { return devVm.Peers[i].Name < devVm.Peers[j].Name })
 				sort.SliceStable(devVm.Peers, func(i, j int) bool { return conv[devVm.Peers[i].Connected] > conv[devVm.Peers[j].Connected] })
 				devicesVm = append(devicesVm, devVm)
