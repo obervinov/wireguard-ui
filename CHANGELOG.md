@@ -2,6 +2,14 @@
 
 Fork of [ngoduykhanh/wireguard-ui](https://github.com/ngoduykhanh/wireguard-ui) `v0.6.2`, which is no longer maintained.
 
+## v0.8.7 - 2026-10-11
+### What's Changed
+#### 🚀 Features
+* Status page, more compact: one card per interface with online count and total traffic in the header; per peer a status dot, name with email, addresses, endpoint (admins only), received and sent in KiB/MiB/GiB, and the last handshake as "42s ago" with the exact time on hover. The public key moved to a tooltip; a peer with no matching client shows its key prefix. On a phone the address and endpoint columns are hidden, traffic is one column, and the handshake moves under the name.
+#### 🐛 Bug Fixes
+* Status: a peer with several allowed IPs showed a literal `</br>` between them, and a peer that never connected showed `<nil>` as its endpoint.
+* Client and Wake-on-LAN cards: buttons sat one per row across the whole card and every IP badge stretched to its full width since v0.8.2. AdminLTE 3.2 turned `.info-box-content` into a flex column; the theme sets it back to a block, so buttons line up in a row and badges wrap as before.
+
 ## v0.8.6 - 2026-10-11
 ### What's Changed
 #### 🔧 CI

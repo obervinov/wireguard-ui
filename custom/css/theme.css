@@ -403,7 +403,8 @@ code { color: var(--wg-accent); }
     transition: box-shadow .15s, border-color .15s;
 }
 .info-box:hover { box-shadow: var(--wg-shadow); border-color: var(--wg-border-strong); }
-.info-box .info-box-content { padding: 0; line-height: 1.6; }
+/* AdminLTE 3.1+ makes this a flex column, which stretches every button group and IP badge to the full width */
+.info-box .info-box-content { display: block; padding: 0; line-height: 1.6; }
 .info-box .info-box-content > .btn-group { margin: 0 0.25rem 0.5rem 0; }
 .info-box .info-box-content > hr { margin: 0.6rem 0 0.75rem; }
 .info-box .info-box-text {
@@ -866,3 +867,22 @@ div.tagsinput div { color: var(--wg-text); }
 .wg-about-links { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .wg-about-avatars { display: flex; flex-wrap: wrap; gap: 6px; }
 .wg-about-avatars img { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--wg-border); }
+
+/* Status page */
+.wg-status .card-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem 1.5rem; }
+.wg-status .card-header::after { display: none; }
+.wg-status-summary { display: flex; flex-wrap: wrap; gap: 0.25rem 1.25rem; color: var(--wg-text-muted); font-size: 0.875rem; }
+.wg-status-summary i { color: var(--wg-text-subtle); margin-right: 0.15rem; }
+.wg-status-table th { color: var(--wg-text-muted); font-weight: 500; font-size: 0.8rem; border-top: 0; white-space: nowrap; padding: 0.6rem 1rem; }
+.wg-status-table td { vertical-align: middle; padding: 0.6rem 1rem; border-color: var(--wg-border); font-size: 0.875rem; }
+.wg-status-peer { display: flex; align-items: center; gap: 0.6rem; }
+.wg-status-name { font-weight: 500; color: var(--wg-text); }
+.wg-status-email { color: var(--wg-text-muted); font-size: 0.8rem; }
+.wg-status-ip { display: inline-block; margin: 0.1rem 0.35rem 0.1rem 0; font-size: 0.8rem; white-space: nowrap; color: var(--wg-text); background: none; padding: 0; }
+.wg-status-idle td { color: var(--wg-text-muted); }
+.wg-dot { display: inline-block; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--wg-border-strong); margin-right: 0.35rem; }
+.wg-dot-on { background: var(--wg-success); box-shadow: 0 0 0 3px var(--wg-success-soft); }
+.wg-status-traffic i { color: var(--wg-text-subtle); font-size: 0.7rem; }
+@media (max-width: 575.98px) {
+    .wg-status-table th, .wg-status-table td { padding: 0.55rem 0.6rem; }
+}
