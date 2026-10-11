@@ -2,6 +2,13 @@
 
 Fork of [ngoduykhanh/wireguard-ui](https://github.com/ngoduykhanh/wireguard-ui) `v0.6.2`, which is no longer maintained.
 
+## v0.8.5 - 2026-10-11
+### What's Changed
+#### 🚀 Features
+* About page split into two cards. **WireGuard UI** shows this fork: version with a *latest* / *update available* badge, release date and latest release from `obervinov/wireguard-ui`, maintainer, and links to the repository, changelog, issues and private vulnerability reporting. **Upstream project** keeps the credit: fork point `v0.6.2`, the upstream author, license and contributors.
+#### 🐛 Bug Fixes
+* About looked up the running version among upstream releases, so it always said "Could not find this version on GitHub.com" and offered upstream `v0.6.2` as the latest release.
+
 ## v0.8.4 - 2026-10-11
 ### What's Changed
 #### 📦 Dependencies

@@ -16,130 +16,128 @@ About
 {{ define "page_content"}}
 <section class="content">
     <div class="container-fluid">
-        <!-- <h5 class="mt-4 mb-2">Global Settings</h5> -->
         <div class="row">
-            <!-- left column -->
-            <div class="col-md-6">
-                <div class="card card-success">
+            <div class="col-lg-6">
+                <div class="card">
                     <div class="card-header">
-                        <h3 class="card-title">About Wireguard-UI</h3>
+                        <h3 class="card-title">WireGuard UI</h3>
                     </div>
-                    <!-- /.card-header -->
                     <div class="card-body">
-                        <div class="form-group">
-                            <label for="version" class="control-label">Current version</label>
-                            <input type="text" class="form-control" id="version" value="{{ .appVersion }}" readonly>
-                        </div>
-{{ if .gitCommit }}
-                        <div class="form-group">
-                            <label for="version" class="control-label">git commit hash</label>
-                            <input type="text" class="form-control" id="version" value="{{ .gitCommit }}" readonly>
-                        </div>
+                        <dl class="wg-about-list">
+                            <dt>Version</dt>
+                            <dd>
+                                <code id="version">{{ .appVersion }}</code>
+                                <span id="versionStatus" class="badge ml-1"></span>
+                            </dd>
+                            <dt>Released</dt>
+                            <dd id="currentReleaseDate" class="text-muted">…</dd>
+{{ if and .gitCommit (ne .gitCommit "N/A") }}
+                            <dt>Commit</dt>
+                            <dd><code>{{ .gitCommit }}</code></dd>
 {{ end }}
-                        <div class="form-group">
-                            <label for="currentReleaseDate" class="control-label">Current version release date</label>
-                            <input type="text" class="form-control" id="currentReleaseDate" readonly>
+                            <dt>Latest release</dt>
+                            <dd id="latestRelease" class="text-muted">…</dd>
+                            <dt>Maintainer</dt>
+                            <dd><a id="maintainer" class="wg-about-person"></a></dd>
+                        </dl>
+                        <div class="wg-about-links">
+                            <a class="btn btn-sm btn-outline-dark" id="linkRepo" target="_blank" rel="noopener"><i class="fab fa-github"></i> Repository</a>
+                            <a class="btn btn-sm btn-outline-dark" id="linkChangelog" target="_blank" rel="noopener"><i class="fas fa-list-ul"></i> Changelog</a>
+                            <a class="btn btn-sm btn-outline-dark" id="linkIssues" target="_blank" rel="noopener"><i class="fas fa-bug"></i> Issues</a>
+                            <a class="btn btn-sm btn-outline-dark" id="linkSecurity" target="_blank" rel="noopener"><i class="fas fa-shield-alt"></i> Report a vulnerability</a>
                         </div>
-                        <div class="form-group">
-                            <label for="latestRelease" class="control-label">Latest release</label>
-                            <input type="text" class="form-control" id="latestRelease" readonly>
-                        </div>
-                        <div class="form-group">
-                            <label for="latestReleaseDate" class="control-label">Latest release date</label>
-                            <input type="text" class="form-control" id="latestReleaseDate" readonly>
-                        </div>
-                        <div class="form-group">
-                            <label for="author" class="control-label">Author</label>
-                            <div id="author">
-                                <a id="authorLink">
-                                    <img id="authorImage"
-                                         style="width: 50px; height: 50px; border-radius: 50%; border: 1px solid #000;">
-                                </a>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="contributors" class="control-label">Contributors</label>
-                            <div id="contributors"></div>
-                        </div>
-                        <strong>Copyright &copy;
-                            <script>document.write(new Date().getFullYear())</script>
-                            <a href="https://github.com/ngoduykhanh/wireguard-ui">Wireguard UI</a>.
-                        </strong> All rights reserved.
-
                     </div>
                 </div>
-                <!-- /.card -->
+            </div>
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Upstream project</h3>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">
+                            This is a maintained fork of
+                            <a id="upstreamLink" target="_blank" rel="noopener">ngoduykhanh/wireguard-ui</a>,
+                            branched from its last release <code>v0.6.2</code> (2024-01-07). Upstream is no longer
+                            maintained. Thanks to its author and contributors for the project this fork is built on.
+                        </p>
+                        <dl class="wg-about-list">
+                            <dt>Author</dt>
+                            <dd><a id="upstreamAuthor" class="wg-about-person"></a></dd>
+                            <dt>License</dt>
+                            <dd>MIT</dd>
+                        </dl>
+                        <label class="control-label">Contributors</label>
+                        <div id="contributors" class="wg-about-avatars"></div>
+                    </div>
+                </div>
             </div>
         </div>
-        <!-- /.row -->
     </div>
 </section>
 {{ end }}
 
 {{ define "bottom_js"}}
 <script>
+    const forkRepo = 'obervinov/wireguard-ui';
+    const upstreamRepo = 'ngoduykhanh/wireguard-ui';
+    const offline = 'Could not reach GitHub';
+
+    function github(path) {
+        return $.ajax({cache: false, method: 'GET', url: 'https://api.github.com/repos/' + path, dataType: 'json'});
+    }
+
+    function person(el, user) {
+        el.attr('href', user.html_url).attr('target', '_blank').attr('rel', 'noopener').empty()
+            .append($('<img>').attr('src', user.avatar_url).attr('alt', ''))
+            .append($('<span>').text(user.login));
+    }
+
+    function day(iso) {
+        return iso.split('T')[0];
+    }
+
     $(document).ready(function () {
+        const version = $('#version').text().trim();
+        const forkURL = 'https://github.com/' + forkRepo;
+        $('#linkRepo').attr('href', forkURL);
+        $('#linkChangelog').attr('href', forkURL + '/blob/main/CHANGELOG.md');
+        $('#linkIssues').attr('href', forkURL + '/issues');
+        $('#linkSecurity').attr('href', forkURL + '/security/advisories/new');
+        $('#upstreamLink').attr('href', 'https://github.com/' + upstreamRepo);
 
-        $.ajax({
-            cache: false,
-            method: 'GET',
-            url: 'https://api.github.com/repos/ngoduykhanh/wireguard-ui/releases/tags/' + $("#version").val(),
-            dataType: 'json',
-            contentType: "application/json",
-            success: function (data) {
-                $("#currentReleaseDate").attr("value", data.published_at.split("T")[0]);
+        const current = github(forkRepo + '/releases/tags/' + encodeURIComponent(version))
+            .done(data => $('#currentReleaseDate').text(day(data.published_at)))
+            .fail(() => $('#currentReleaseDate').text('Not a published release'));
 
-            },
-            error: function (jqXHR, exception) {
-                $("#currentReleaseDate").attr("value", "Could not find this version on GitHub.com");
+        const latest = github(forkRepo + '/releases/latest')
+            .done(data => $('#latestRelease').empty().append(
+                $('<a>').attr('href', data.html_url).attr('target', '_blank').attr('rel', 'noopener').text(data.tag_name),
+                document.createTextNode(' · ' + day(data.published_at))))
+            .fail(() => $('#latestRelease').text(offline));
+
+        $.when(current, latest).done(function (cur, last) {
+            const status = $('#versionStatus');
+            if (cur[0].tag_name === last[0].tag_name) {
+                status.addClass('badge-success').text('latest');
+            } else if (Date.parse(cur[0].published_at) < Date.parse(last[0].published_at)) {
+                status.addClass('badge-warning').text('update available');
             }
         });
 
+        github(forkRepo)
+            .done(data => person($('#maintainer'), data.owner))
+            .fail(() => $('#maintainer').text(offline));
 
-        $.ajax({
-            cache: false,
-            method: 'GET',
-            url: 'https://api.github.com/repos/ngoduykhanh/wireguard-ui/releases/latest',
-            dataType: 'json',
-            contentType: "application/json",
-            success: function (data) {
-                $("#latestRelease").attr("value", data.tag_name);
-                $("#latestReleaseDate").attr("value", data.published_at.split("T")[0]);
-                $("#author").attr("value", data.author.login);
-                $("#authorImage").attr("src", data.author.avatar_url);
-                $("#authorImage").after("<b>  " + data.author.login + "</b>");
-                $("#authorLink").attr("href", data.author.html_url);
+        github(upstreamRepo)
+            .done(data => person($('#upstreamAuthor'), data.owner))
+            .fail(() => $('#upstreamAuthor').text(offline));
 
-            },
-            error: function (jqXHR, exception) {
-                $("#latestRelease").attr("value", "Could not connect to GitHub.com");
-                $("#latestReleaseDate").attr("value", "Could not connect to GitHub.com");
-                $("#author").attr("value", "Could not connect to GitHub.com");
-            }
-        });
-
-        $.ajax({
-            cache: false,
-            method: 'GET',
-            url: 'https://api.github.com/repos/ngoduykhanh/wireguard-ui/contributors',
-            dataType: 'json',
-            contentType: "application/json",
-            success: function (data) {
-                data.forEach(contributor => $("#contributors").append("<a href=\"" + contributor.html_url + "\" title=\"" + contributor.login + "\">" +
-                    "<img src=\"" + contributor.avatar_url + "\" style=\"width: 50px; height: 50px; border-radius: 50%; border: 1px solid #000; margin: 5px;\"/></a>"));
-            },
-            error: function (jqXHR, exception) {
-                $("#contributors").html("<p>Could not connect to GitHub.com</p>");
-            }
-        });
+        github(upstreamRepo + '/contributors')
+            .done(data => data.forEach(c => $('#contributors').append(
+                $('<a>').attr('href', c.html_url).attr('title', c.login).attr('target', '_blank').attr('rel', 'noopener')
+                    .append($('<img>').attr('src', c.avatar_url).attr('alt', c.login)))))
+            .fail(() => $('#contributors').html($('<p class="text-muted">').text(offline)));
     });
-
-    $(document).ajaxStop(function () {
-        if (Date.parse($("#currentReleaseDate").val()) < Date.parse($("#latestReleaseDate").val())) {
-            $("#currentReleaseDate").after("<p style=\"color:red\">Current version is out of date</p>")
-        }
-    });
-
-
 </script>
 {{ end }}

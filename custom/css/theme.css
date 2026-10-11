@@ -856,3 +856,13 @@ div.tagsinput div { color: var(--wg-text); }
     .main-header .navbar-nav.ml-auto .btn { flex: 1 1 auto; }
     .login-card-body { padding: 1.25rem; }
 }
+
+/* About page */
+.wg-about-list { display: grid; grid-template-columns: max-content 1fr; gap: 0.6rem 1.25rem; margin-bottom: 1.25rem; align-items: center; }
+.wg-about-list dt { color: var(--wg-text-muted); font-weight: 500; font-size: 0.875rem; }
+.wg-about-list dd { margin: 0; color: var(--wg-text); min-width: 0; overflow-wrap: anywhere; }
+.wg-about-person { display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 500; }
+.wg-about-person img { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--wg-border); }
+.wg-about-links { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.wg-about-avatars { display: flex; flex-wrap: wrap; gap: 6px; }
+.wg-about-avatars img { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--wg-border); }
