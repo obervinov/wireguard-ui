@@ -1,5 +1,5 @@
 # Build stage
-FROM --platform=${BUILDPLATFORM:-linux/amd64} golang:1.21-alpine3.19 AS builder
+FROM --platform=${BUILDPLATFORM:-linux/amd64} golang:1.27-alpine3.24 AS builder
 
 ARG BUILDPLATFORM
 ARG TARGETOS
@@ -56,12 +56,14 @@ RUN cp -r /build/custom/ assets/
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags="-X 'main.appVersion=${APP_VERSION}' -X 'main.buildTime=${BUILD_TIME}' -X 'main.gitCommit=${GIT_COMMIT}'" -a -o wg-ui .
 
 # Release stage
-FROM alpine:3.19
+FROM alpine:3.24
 
 RUN addgroup -S wgui && \
     adduser -S -D -G wgui wgui
 
-RUN apk --no-cache add ca-certificates wireguard-tools jq iptables
+# upgrade picks up Alpine fixes released after the base image was built
+RUN apk --no-cache upgrade && \
+    apk --no-cache add ca-certificates wireguard-tools jq iptables
 
 WORKDIR /app
 
