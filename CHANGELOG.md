@@ -7,6 +7,8 @@ Fork of [ngoduykhanh/wireguard-ui](https://github.com/ngoduykhanh/wireguard-ui) 
 #### 🔒 Security
 * The session key generated when `SESSION_SECRET` is not set came from `math/rand` seeded with the start time, so it could be guessed; it now comes from `crypto/rand`.
 * Login accepts `?next=` only when it resolves to this host; anything else goes to the home page.
+#### 📚 Documentation
+* `SECURITY.md`: supported versions, private reporting through GitHub advisories, trust boundaries, deployment recommendations and what wgui enforces.
 #### 🐛 Bug Fixes
 * With `BASE_PATH` set, login without `?next=` sent the browser to `//<base path>`, which the browser reads as another host; it now goes to `<base path>/`.
 
