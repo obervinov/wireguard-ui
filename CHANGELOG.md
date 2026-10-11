@@ -2,6 +2,11 @@
 
 Fork of [ngoduykhanh/wireguard-ui](https://github.com/ngoduykhanh/wireguard-ui) `v0.6.2`, which is no longer maintained.
 
+## v0.8.6 - 2026-10-11
+### What's Changed
+#### 🔧 CI
+* Workflows use `obervinov/_templates` `v4.2.0`: Dependabot pull requests pass without a `CHANGELOG.md` bump and merge without a release, so the update ships with the next one. The image build after the release runs only when a release was actually created, so such a merge cannot overwrite the image of a version that is already out.
+
 ## v0.8.5 - 2026-10-11
 ### What's Changed
 #### 🚀 Features

@@ -16,8 +16,8 @@ permissions:
 
 jobs:
   pr:
-    uses: obervinov/_templates/.github/workflows/pr.yaml@v4.0.0
+    uses: obervinov/_templates/.github/workflows/pr.yaml@v4.2.0
 
   build-pr-image:
-    uses: obervinov/_templates/.github/workflows/docker.yaml@v4.0.0
+    uses: obervinov/_templates/.github/workflows/docker.yaml@v4.2.0
     needs: [pr]
