@@ -2,6 +2,11 @@
 
 Fork of [ngoduykhanh/wireguard-ui](https://github.com/ngoduykhanh/wireguard-ui) `v0.6.2`, which is no longer maintained.
 
+## v0.8.8 - 2026-10-21
+### What's Changed
+#### 🔒 Security
+* Rebuild against the 2026-10-20 trust-store fixes for the revoked eMudhra intermediates (EM DV/OV/EV TLS CA G3B and G3C) and their Sectigo AAA cross-signs: the release image picks up Alpine `ca-certificates` `20261020-r0` through its `apk upgrade`, and the builder is pinned to `golang:1.27.3-alpine3.24` (CVE-2026-111943) instead of the floating `1.27` tag.
+
 ## v0.8.7 - 2026-10-11
 ### What's Changed
 #### 🚀 Features
