@@ -7,7 +7,7 @@ require (
 	github.com/glendc/go-external-ip v0.1.0
 	github.com/gorilla/sessions v1.4.0
 	github.com/labstack/echo-contrib v0.50.1
-	github.com/labstack/echo/v4 v4.16.0
+	github.com/labstack/echo/v4 v4.16.1
 	github.com/labstack/gommon v0.5.0
 	github.com/rs/xid v1.6.0
 	github.com/sabhiram/go-wol v0.0.0-20250815165103-eaddd4c17972
